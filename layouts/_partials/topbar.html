@@ -1,0 +1,11 @@
+{{- /*
+  The top bar: the lowercase name linking retrofit.sh, search, and the
+  release version the docs tree was generated for (manifest.json).
+*/ -}}
+<header class="rf-topbar">
+  <div class="rf-topbar-content">
+    <a class="rf-topbar-name" href="{{ site.Params.homeURL }}">{{ site.Title }}</a>
+    {{ partial "docs/search" . }}
+    {{ with hugo.Data.manifest.version }}<span class="rf-topbar-version">{{ . }}</span>{{ end }}
+  </div>
+</header>

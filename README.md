@@ -23,6 +23,7 @@ Needs Hugo, Go, and a retrofit checkout (default `../retrofit`):
 make build                    # write the docs tree from retrofit, then build into public/
 make serve                    # the same tree, served at http://localhost:1313
 make build RETROFIT=~/src/retrofit
+make check                    # build, then check the rendered navigation against the manifest
 ```
 
 `make tree` runs `go run ./cmd/docs -out _tree` in the retrofit checkout.
@@ -30,19 +31,43 @@ make build RETROFIT=~/src/retrofit
 `_tree/manifest.json` as `data/manifest.json`. `_tree/` is ignored.
 
 The build fails if a page the manifest names has no page in the build, or if
-a link between docs names a page the tree does not have.
+a link between docs names a page the tree does not have. `make check` adds
+`scripts/check-nav`: on every page, the navigation lists every manifest page
+in order under its section, every entry resolves, and the page's own entry is
+the one marked active.
+
+## Chrome
+
+- **Top bar**: the lowercase name linking retrofit.sh, search, and the
+  version from `manifest.json`.
+- **Left**: the manifest's sections in order, not hugo-book's file tree.
+  Previous and next follow the same order.
+- **Right**: the page's table of contents.
+- **Off**: edit-this-page and last-change links, comments, the service
+  worker. Light theme only; the design system has no dark mode.
 
 ## Layout
 
 ```
 hugo.toml                     config: the theme import, the _tree mounts, hugo-book params
 go.mod, go.sum                the hugo-book pin
-Makefile                      tree, build, serve, clean
+Makefile                      tree, build, serve, check, clean
 netlify.toml                  Hugo pin, contexts, headers
-layouts/_partials/
-  manifest-check.html         build guard: every manifest page renders
-  docs/inject/head.html       hugo-book hook: the guard, noindex on previews
+scripts/check-nav             the rendered navigation against the manifest
+assets/styles/custom.css      hugo-book's style hook: top bar and pane layout
+layouts/
+  baseof.html                 hugo-book's, with the top bar, the manifest menu and a TOC-only right pane
+  _partials/
+    topbar.html               name, search, version
+    nav.html                  the left navigation from manifest.json
+    manifest-check.html       build guard: every manifest page renders
+    docs/prev-next.html       hugo-book's, in manifest order
+    docs/inject/head.html     hugo-book hook: the guard, noindex on previews
 ```
+
+`layouts/baseof.html` and `layouts/_partials/docs/prev-next.html` replace
+hugo-book's files of the same name. When the pin moves, diff them against the
+theme's copies.
 
 To move the hugo-book pin:
 

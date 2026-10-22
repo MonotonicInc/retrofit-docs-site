@@ -52,10 +52,13 @@ enableRobotsTXT = false
     endLevel = 3
 
 [params]
-  # The generated pages sit at the content root, so the menu renders from
-  # there. D2 replaces the file tree with the manifest's sections.
-  BookSection = "/"
+  # Where the top bar's name links: the landing page is retrofit.sh.
+  homeURL = "https://retrofit.sh/"
 
+  # The left navigation is manifest.json's sections (layouts/_partials/nav.html),
+  # not hugo-book's file tree, so BookSection is unset.
+
+  # Light only: the design system has no dark mode, and hugo-book has no toggle.
   BookTheme = "light"
   BookToC = true
   BookSearch = true

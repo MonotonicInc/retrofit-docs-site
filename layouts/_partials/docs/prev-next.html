@@ -1,0 +1,43 @@
+{{- /*
+  hugo-book's prev-next.html walks the file tree. Here previous and next
+  follow manifest.json's order, the same order as the left navigation
+  (_partials/nav.html), across section boundaries.
+*/ -}}
+{{- $order := slice -}}
+{{- range hugo.Data.manifest.sections -}}
+  {{- range .pages -}}
+    {{- with site.GetPage (printf "/%s" (strings.TrimSuffix ".md" .path)) -}}
+      {{- $order = $order | append . -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+
+{{- $prev := false -}}
+{{- $next := false -}}
+{{- range $i, $p := $order -}}
+  {{- if eq $p.RelPermalink $.RelPermalink -}}
+    {{- if gt $i 0 }}{{ $prev = index $order (sub $i 1) }}{{ end -}}
+    {{- if lt (add $i 1) (len $order) }}{{ $next = index $order (add $i 1) }}{{ end -}}
+  {{- end -}}
+{{- end -}}
+
+{{- if or $prev $next -}}
+<div class="flex flex-wrap justify-between">
+  <span>
+  {{ with $prev }}
+    <a href="{{ .RelPermalink }}" class="flex align-center">
+      <svg class="book-icon" aria-hidden="true">{{ partial "docs/icon" "backward" }}</svg>
+      <span>{{ partial "docs/title" . }}</span>
+    </a>
+  {{ end }}
+  </span>
+  <span>
+  {{ with $next }}
+    <a href="{{ .RelPermalink }}" class="flex align-center">
+      <span>{{ partial "docs/title" . }}</span>
+      <svg class="book-icon" aria-hidden="true">{{ partial "docs/icon" "forward" }}</svg>
+    </a>
+  {{ end }}
+  </span>
+</div>
+{{- end -}}

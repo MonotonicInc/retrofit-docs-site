@@ -19,11 +19,19 @@ configuration only.
 ```sh
 make build        # RETROFIT=../retrofit by default
 make serve
+make check        # build, then scripts/check-nav
 ```
 
 Two checks fail the build: a page `manifest.json` names with no page in the
 build (`layouts/_partials/manifest-check.html`), and a link between docs to a
 page the tree does not have (hugo-book's portable links, set to `error`).
+`scripts/check-nav` checks the rendered navigation against the manifest.
+
+## Navigation
+
+The left navigation, its order and its titles are `manifest.json`'s, which
+retrofit writes from `docs/nav.yaml`. Do not add entries, reorder, or retitle
+here; change `docs/nav.yaml` in retrofit.
 
 ## Design and voice
 
@@ -37,5 +45,6 @@ lowercase `retrofit`.
 
 - Hugo: `HUGO_VERSION` in `netlify.toml`, matching retrofit-site's.
 - hugo-book: `go.mod`. Move it with
-  `hugo mod get github.com/alex-shpak/hugo-book@<commit>`, then build and
-  check the warnings.
+  `hugo mod get github.com/alex-shpak/hugo-book@<commit>`, then build,
+  check the warnings, and diff `layouts/baseof.html` and
+  `layouts/_partials/docs/prev-next.html` against the theme's copies.

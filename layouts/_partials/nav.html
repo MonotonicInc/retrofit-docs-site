@@ -1,0 +1,25 @@
+{{- /*
+  The left navigation: manifest.json's sections in order, each page under
+  its section with the title the manifest gives it. Navigation is a file in
+  retrofit (docs/nav.yaml); the site renders it and adds nothing. An entry
+  with no page in this build fails the build.
+*/ -}}
+{{- $current := . -}}
+<ul>
+{{- range hugo.Data.manifest.sections }}
+  <li class="book-section-flat">
+    <span>{{ .title }}</span>
+    <ul>
+    {{- range .pages }}
+      {{- $entry := . -}}
+      {{- $path := printf "/%s" (strings.TrimSuffix ".md" .path) -}}
+      {{- with site.GetPage $path }}
+      <li><a href="{{ .RelPermalink }}"{{ if eq .RelPermalink $current.RelPermalink }} class="active" aria-current="page"{{ end }}>{{ $entry.title }}</a></li>
+      {{- else }}
+        {{- errorf "nav: manifest page %q has no page in this build" $entry.path -}}
+      {{- end }}
+    {{- end }}
+    </ul>
+  </li>
+{{- end }}
+</ul>
