@@ -26,10 +26,11 @@ make build RETROFIT=~/src/retrofit
 make check                    # build, then check the rendered navigation against the manifest
 ```
 
-That is one docs tree, served at the root. The published site is versioned:
+That is one docs tree, served at the root. The published site is built from
+releases:
 
 ```sh
-make versions                 # every line in versions.toml from its newest release on GitHub
+make versions                 # what versions.toml publishes, from releases on GitHub
 make fixture                  # pack this retrofit checkout's tree as a release under _fixtures/
 make versions RELEASES_DIR=_fixtures
 make versions-test            # the versions/ tests; they run Hugo
@@ -47,21 +48,34 @@ the one marked active.
 
 ## Versions
 
-`versions.toml` lists the supported release lines. `make versions` (the
-`versions/` Go module) builds the site Netlify publishes:
+`make versions` (the `versions/` Go module) builds the site Netlify
+publishes. `publish` in `versions.toml` chooses the layout.
 
-- each line from the docs bundle (`retrofit_docs.tar.gz`) of its newest full
-  release on `MonotonicHQ/retrofit` (tags `bin-vX.Y.Z`, later `vX.Y.Z`;
-  drafts and pre-releases skipped), checked against that release's
-  `checksums.txt` and refused on a mismatch or a manifest naming another
-  version;
-- one Hugo build per line at `/X.Y/`, and the newest again at `/current/`;
+**Before 1.0, `publish = "current"`**, the setting today:
+
+- `/current/` only, from the docs bundle (`retrofit_docs.tar.gz`) of the
+  newest full release of any line on `MonotonicHQ/retrofit` (tags
+  `bin-vX.Y.Z`, later `vX.Y.Z`; drafts and pre-releases skipped). A new
+  release publishes with no edit here. No `/X.Y/` path exists;
+- every page is its own canonical, and the top bar names the version with
+  no switcher;
+- under every page, one sentence points at the release notes
+  (`layouts/_partials/docs/inject/footer.html`); it drops out at 1.0.
+
+**From 1.0, `publish = "lines"`** with `lines = ["1.0", ...]`:
+
+- each listed line from its newest full release, at `/X.Y/`, and the newest
+  line again at `/current/`;
 - `/current/` is canonical on every page the newest line has
   (`layouts/_partials/canonical.html`);
 - the version in the top bar opens the other lines, at the same page where
-  it exists (`layouts/_partials/topbar.html`);
-- the root: `_redirects` sends `/` to `/current/`, `/fonts/` (fonts.css
-  loads the faces from the root), and `404.html`.
+  it exists (`layouts/_partials/topbar.html`).
+
+`/current/` exists under both, so links printed by 0.x binaries keep
+resolving. Either way, each bundle is checked against its release's
+`checksums.txt` and refused on a mismatch or a manifest naming another
+version, and the root holds `_redirects` (`/` to `/current/`), `/fonts/`
+(fonts.css loads the faces from the root) and `404.html`.
 
 Every bundle is fetched and checked before anything is built, so a refusal
 leaves no partial site. Until the first release carries a bundle (v0.10.0),
@@ -71,6 +85,8 @@ leaves no partial site. Until the first release carries a bundle (v0.10.0),
 
 - **Top bar**: the lowercase name linking retrofit.sh, search, and the
   version from `manifest.json`.
+- **Under the page**: previous and next, then, before 1.0, one sentence
+  pointing at the release notes.
 - **Left**: the manifest's sections in order, not hugo-book's file tree.
   Previous and next follow the same order.
 - **Right**: the page's table of contents.
@@ -104,8 +120,8 @@ go.mod, go.sum                the hugo-book pin
 Makefile                      tree, build, serve, check, style-*, versions, fixture, clean
 netlify.toml                  Hugo pin, contexts, headers
 style.lock                    the retrofit-site commit and SHA-256 of each copied file
-versions.toml                 the release lines the site publishes
-versions/                     the versioned build (Go, its own module): build and pack
+versions.toml                 what the site publishes: /current/ only, or per line from 1.0
+versions/                     the published build (Go, its own module): build and pack
 scripts/check-nav             the rendered navigation against the manifest
 scripts/style-sync            copy the design system files from retrofit-site
 scripts/style-check           hold the copies to style.lock
@@ -124,6 +140,7 @@ layouts/
     docs/prev-next.html       hugo-book's, in manifest order
     docs/html-head-favicon.html  hugo-book's, linking the mark only
     docs/inject/head.html     hugo-book hook: the guard, noindex on previews, the design system CSS
+    docs/inject/footer.html   hugo-book hook: the pre-1.0 note pointing at the release notes
 ```
 
 `layouts/baseof.html`, `layouts/_partials/docs/html-head.html`,

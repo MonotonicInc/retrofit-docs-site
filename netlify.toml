@@ -4,12 +4,12 @@
 # version; hugo-book (go.mod) needs 0.158 or later. Hugo fetches the theme
 # module with Go, which the Netlify image provides.
 #
-# `make versions` builds one site per release line in versions.toml at
-# /X.Y/ and the newest again at /current/, from the docs bundle each line's
-# newest full release on MonotonicHQ/retrofit carries, checked against that
-# release's checksums.txt. It needs no access to a private repository. Until
-# the first release carrying a bundle (v0.10.0) it has nothing to build and
-# fails. Set GITHUB_TOKEN in the site's environment to lift the API's
+# `make versions` builds what versions.toml publishes: before 1.0, /current/
+# only, from the docs bundle the newest full release on MonotonicHQ/retrofit
+# carries, checked against that release's checksums.txt. So a release's call
+# to the build hook publishes it with no edit to versions.toml. It needs no
+# access to a private repository. Until the first release carrying a bundle
+# (v0.10.0) it has nothing to build and fails. Set GITHUB_TOKEN in the site's environment to lift the API's
 # unauthenticated rate limit.
 
 [build]

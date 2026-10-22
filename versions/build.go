@@ -18,7 +18,8 @@ type buildInput struct {
 	root    string // the site repository: hugo.toml, layouts, static
 	out     string // the publish directory, replaced whole
 	baseURL string
-	lines   []string
+	publish string   // publishCurrent or publishLines
+	lines   []string // publishLines: the lines to build at /X.Y/
 	src     source
 	hugo    string
 	log     io.Writer
@@ -56,19 +57,35 @@ func build(in buildInput) error {
 	if !strings.HasSuffix(base.Path, "/") {
 		base.Path += "/"
 	}
+	switch {
+	case in.publish == publishCurrent && len(in.lines) > 0:
+		return fmt.Errorf("publish %q takes no lines", publishCurrent)
+	case in.publish == publishLines && len(in.lines) == 0:
+		return fmt.Errorf("publish %q and no lines", publishLines)
+	case in.publish != publishCurrent && in.publish != publishLines:
+		return fmt.Errorf("publish %q; want %q or %q", in.publish, publishCurrent, publishLines)
+	}
 
-	// Fetch, check and unpack every line before building anything, so a
+	// Fetch, check and unpack every release before building anything, so a
 	// refusal leaves no partial site behind.
 	work := filepath.Join(in.root, "_versions")
 	if err := os.RemoveAll(work); err != nil {
 		return err
 	}
+	// Before 1.0 (publishCurrent) one release is built, the newest of any
+	// line, and only at /current/. From 1.0 (publishLines) each listed
+	// line's newest release is built at /X.Y/ and the newest again there.
+	asks := in.lines
+	if in.publish == publishCurrent {
+		asks = []string{anyLine}
+	}
 	var builds []lineBuild
-	for _, line := range in.lines {
-		tag, v, err := in.src.newest(line)
+	for _, ask := range asks {
+		tag, v, err := in.src.newest(ask)
 		if err != nil {
 			return err
 		}
+		line := v.line()
 		bundle, err := in.src.asset(tag, bundleName)
 		if err != nil {
 			return fmt.Errorf("line %s: %s: %w", line, tag, err)
@@ -99,10 +116,14 @@ func build(in buildInput) error {
 		CurrentURL: base.JoinPath("current").String() + "/",
 	}
 	for _, b := range builds {
+		url := path.Join(base.Path, b.line) + "/"
+		if in.publish == publishCurrent {
+			url = path.Join(base.Path, "current") + "/"
+		}
 		data.Lines = append(data.Lines, versionsLine{
 			Line:    b.line,
 			Version: b.m.Version,
-			URL:     path.Join(base.Path, b.line) + "/",
+			URL:     url,
 			Pages:   b.m.pages(),
 		})
 	}
@@ -119,8 +140,10 @@ func build(in buildInput) error {
 		b    lineBuild
 	}
 	targets := []target{}
-	for _, b := range builds {
-		targets = append(targets, target{b.line, b})
+	if in.publish == publishLines {
+		for _, b := range builds {
+			targets = append(targets, target{b.line, b})
+		}
 	}
 	targets = append(targets, target{"current", current})
 
@@ -167,6 +190,10 @@ func build(in buildInput) error {
 	}
 	if err := os.WriteFile(filepath.Join(out, "404.html"), notFound, 0o644); err != nil {
 		return err
+	}
+	if in.publish == publishCurrent {
+		fmt.Fprintf(in.log, "versions: /current/ only, %s (%s), the newest full release\n", current.line, current.tag)
+		return nil
 	}
 	lines := "lines"
 	if len(builds) == 1 {

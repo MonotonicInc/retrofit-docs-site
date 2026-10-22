@@ -237,6 +237,29 @@ nav a[role=button]:hover {
   color: var(--ink-soft);
 }
 
+/* The pre-1.0 note (_partials/docs/inject/footer.html), quiet metadata. */
+.rf-prerelease {
+  margin: var(--rf-space-5) 0 0;
+  padding-top: var(--rf-space-3);
+  border-top: 1px solid var(--rule);
+  font-size: 0.84rem;
+  color: var(--hush);
+}
+
+.rf-prerelease a[href],
+.rf-prerelease a[href]:visited {
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-color: var(--rule-strong);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+  transition: text-decoration-color 90ms linear;
+}
+
+.rf-prerelease a[href]:hover {
+  text-decoration-color: var(--ink);
+}
+
 /* ───── the page ───── */
 .markdown {
   line-height: 1.72;

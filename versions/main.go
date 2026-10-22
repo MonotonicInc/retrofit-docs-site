@@ -1,14 +1,17 @@
-// Command versions builds the versioned docs site: one Hugo build per
-// supported release line at /X.Y/, the newest line again at /current/, and
-// the root files (a redirect to /current/, the fonts, a 404 page).
+// Command versions builds the published docs site and its root files (a
+// redirect to /current/, the fonts, a 404 page). versions.toml's publish
+// chooses the layout: "current", before 1.0, builds the newest full release
+// of any line at /current/ and nothing else; "lines", from 1.0, builds each
+// listed line's newest full release at /X.Y/ and the newest line again at
+// /current/.
 //
 //	versions build -root <site> -out <dir> [-config versions.toml]
 //	               [-base-url <url>] [-releases-dir <dir>] [-hugo <path>]
 //	versions pack -tree <dir> -out <dir> [-tag <tag>]
 //
-// build reads each line's docs bundle (retrofit_docs.tar.gz) from the newest
-// full release of that line, checks it against the release's checksums.txt
-// and refuses on a mismatch. By default the releases are the repository's on
+// build reads each docs bundle (retrofit_docs.tar.gz) it builds from its
+// release, checks it against the release's checksums.txt and refuses on a
+// mismatch. By default the releases are the repository's on
 // GitHub; -releases-dir reads them from <dir>/<tag>/ instead, laid out as
 // releases/download/<tag>/ is, which is how a build runs before a release
 // exists and how the tests run.
@@ -85,6 +88,7 @@ func run(args []string, stdout io.Writer) error {
 			root:    *root,
 			out:     *out,
 			baseURL: *baseURL,
+			publish: cfg.Publish,
 			lines:   cfg.Lines,
 			src:     src,
 			hugo:    *hugo,

@@ -7,9 +7,9 @@ HUGO ?= hugo
 HUGO_FLAGS ?=
 TREE := $(CURDIR)/_tree
 
-# The versioned site (versions/): one build per line in versions.toml at
-# /X.Y/, the newest again at /current/. Bundles come from each line's newest
-# full release on GitHub, or from RELEASES_DIR/<tag>/ when it is set.
+# The published site (versions/): what versions.toml publishes, /current/
+# only before 1.0. Bundles come from full releases on GitHub, or from
+# RELEASES_DIR/<tag>/ when it is set.
 BASE_URL ?= https://docs.retrofit.sh/
 RELEASES_DIR ?=
 VERSIONS := $(CURDIR)/_bin/versions

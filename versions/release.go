@@ -34,9 +34,17 @@ const (
 const maxBundle = 256 << 20
 
 type config struct {
-	Repo  string   `toml:"repo"`
-	Lines []string `toml:"lines"`
+	Repo    string   `toml:"repo"`
+	Publish string   `toml:"publish"`
+	Lines   []string `toml:"lines"`
 }
+
+// The publish modes. Before 1.0 the site is /current/ alone, the newest full
+// release of any line; from 1.0 each listed line is built at /X.Y/ as well.
+const (
+	publishCurrent = "current"
+	publishLines   = "lines"
+)
 
 var lineRE = regexp.MustCompile(`^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$`)
 
@@ -52,8 +60,20 @@ func loadConfig(file string) (config, error) {
 	if cfg.Repo == "" {
 		return cfg, fmt.Errorf("%s: no repo", file)
 	}
-	if len(cfg.Lines) == 0 {
-		return cfg, fmt.Errorf("%s: no lines", file)
+	switch cfg.Publish {
+	case "":
+		return cfg, fmt.Errorf("%s: no publish (%q or %q)", file, publishCurrent, publishLines)
+	case publishCurrent:
+		if len(cfg.Lines) > 0 {
+			return cfg, fmt.Errorf("%s: publish = %q builds the newest release of any line; lines is for publish = %q", file, publishCurrent, publishLines)
+		}
+		return cfg, nil
+	case publishLines:
+		if len(cfg.Lines) == 0 {
+			return cfg, fmt.Errorf("%s: publish = %q and no lines", file, publishLines)
+		}
+	default:
+		return cfg, fmt.Errorf("%s: publish = %q; want %q or %q", file, cfg.Publish, publishCurrent, publishLines)
 	}
 	seen := map[string]bool{}
 	for _, l := range cfg.Lines {
@@ -106,13 +126,25 @@ func lineVersion(line string) semver {
 	return semver{x, y, 0}
 }
 
-// newestTag picks the newest full release of line among tags.
+// anyLine asks a source for the newest full release whatever its line.
+const anyLine = ""
+
+// lineName is how a refusal names what was asked for.
+func lineName(line string) string {
+	if line == anyLine {
+		return "the newest release"
+	}
+	return "line " + line
+}
+
+// newestTag picks the newest full release of line among tags, or of any
+// line when line is anyLine.
 func newestTag(line string, tags []string) (string, semver, bool) {
 	var best string
 	var bestV semver
 	for _, t := range tags {
 		v, ok := parseTag(t)
-		if !ok || v.line() != line {
+		if !ok || (line != anyLine && v.line() != line) {
 			continue
 		}
 		if best == "" || bestV.less(v) {
@@ -122,7 +154,8 @@ func newestTag(line string, tags []string) (string, semver, bool) {
 	return best, bestV, best != ""
 }
 
-// A source finds a line's newest full release and reads its assets.
+// A source finds a line's newest full release (or the newest of any line,
+// for anyLine) and reads its assets.
 type source interface {
 	newest(line string) (tag string, v semver, err error)
 	asset(tag, name string) ([]byte, error)
@@ -183,7 +216,7 @@ func (g *githubSource) newest(line string) (string, semver, error) {
 	}
 	tag, v, ok := newestTag(line, tags)
 	if !ok {
-		return "", semver{}, fmt.Errorf("line %s: no full release on %s", line, g.repo)
+		return "", semver{}, fmt.Errorf("%s: no full release on %s", lineName(line), g.repo)
 	}
 	return tag, v, nil
 }
@@ -230,7 +263,7 @@ func (d dirSource) newest(line string) (string, semver, error) {
 	}
 	tag, v, ok := newestTag(line, tags)
 	if !ok {
-		return "", semver{}, fmt.Errorf("line %s: no full release in %s", line, d.dir)
+		return "", semver{}, fmt.Errorf("%s: no full release in %s", lineName(line), d.dir)
 	}
 	return tag, v, nil
 }

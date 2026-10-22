@@ -31,6 +31,39 @@ func TestNewestTag(t *testing.T) {
 	if got, _, ok := newestTag("1.0", tags); ok {
 		t.Errorf("newestTag(1.0) = %q; want none", got)
 	}
+	if got, _, ok := newestTag(anyLine, tags); !ok || got != "v0.11.0" {
+		t.Errorf("newestTag(any line) = %q, %v; want v0.11.0", got, ok)
+	}
+}
+
+func TestLoadConfig(t *testing.T) {
+	t.Parallel()
+	for _, c := range []struct {
+		name, body, refusal string
+	}{
+		{"current", "repo = \"o/r\"\npublish = \"current\"\n", ""},
+		{"lines", "repo = \"o/r\"\npublish = \"lines\"\nlines = [\"0.10\", \"1.0\"]\n", ""},
+		{"current with lines", "repo = \"o/r\"\npublish = \"current\"\nlines = [\"0.10\"]\n", "lines is for"},
+		{"lines without lines", "repo = \"o/r\"\npublish = \"lines\"\n", "no lines"},
+		{"unknown publish", "repo = \"o/r\"\npublish = \"all\"\n", "want \"current\" or \"lines\""},
+		{"no publish", "repo = \"o/r\"\nlines = [\"0.10\"]\n", "no publish"},
+		{"no repo", "publish = \"current\"\n", "no repo"},
+		{"unknown key", "repo = \"o/r\"\npublish = \"current\"\nline = \"0.10\"\n", "unknown key"},
+		{"bad line", "repo = \"o/r\"\npublish = \"lines\"\nlines = [\"v0.10\"]\n", "not X.Y"},
+		{"line twice", "repo = \"o/r\"\npublish = \"lines\"\nlines = [\"0.10\", \"0.10\"]\n", "twice"},
+	} {
+		f := filepath.Join(t.TempDir(), "versions.toml")
+		if err := os.WriteFile(f, []byte(c.body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		_, err := loadConfig(f)
+		switch {
+		case c.refusal == "" && err != nil:
+			t.Errorf("%s: %v; want it accepted", c.name, err)
+		case c.refusal != "" && (err == nil || !strings.Contains(err.Error(), c.refusal)):
+			t.Errorf("%s: %v; want a refusal containing %q", c.name, err, c.refusal)
+		}
+	}
 }
 
 func TestGithubSourceSkipsDraftsAndPrereleases(t *testing.T) {
@@ -70,9 +103,12 @@ func TestGithubSourceSkipsDraftsAndPrereleases(t *testing.T) {
 	if _, _, err := g.newest("0.11"); err == nil {
 		t.Error("newest(0.11) found a release; want a refusal")
 	}
-	// Three lines looked up, two pages of releases: the list is fetched once.
+	if got, _, err := g.newest(anyLine); err != nil || got != "bin-v0.10.1" {
+		t.Errorf("newest(any line) = %q, %v; want bin-v0.10.1", got, err)
+	}
+	// Four lookups, two pages of releases: the list is fetched once.
 	if n := calls.Load(); n != 2 {
-		t.Errorf("%d API calls for three lines over two pages; want 2", n)
+		t.Errorf("%d API calls for four lookups over two pages; want 2", n)
 	}
 }
 

@@ -103,7 +103,7 @@ func TestBuildTwoLines(t *testing.T) {
 	out := filepath.Join(t.TempDir(), "public")
 	var log bytes.Buffer
 	err := build(buildInput{
-		root: root, out: out, baseURL: "https://docs.example/",
+		root: root, out: out, baseURL: "https://docs.example/", publish: publishLines,
 		lines: []string{"0.10", "0.11"}, src: dirSource{dir: rels}, hugo: hugo, log: &log,
 	})
 	if err != nil {
@@ -171,6 +171,75 @@ func TestBuildTwoLines(t *testing.T) {
 	}
 }
 
+// Before 1.0 the site is /current/ alone: the newest full release of any
+// line, with no line configured and no /X.Y/ path.
+func TestBuildCurrentOnly(t *testing.T) {
+	root, rels, hugo := siteRoot(t), releases(t), hugoBin(t)
+	out := filepath.Join(t.TempDir(), "public")
+	var log bytes.Buffer
+	err := build(buildInput{
+		root: root, out: out, baseURL: "https://docs.example/", publish: publishCurrent,
+		src: dirSource{dir: rels}, hugo: hugo, log: &log,
+	})
+	if err != nil {
+		t.Fatalf("build: %v\n%s", err, log.String())
+	}
+
+	ents, err := os.ReadDir(out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got []string
+	for _, e := range ents {
+		got = append(got, e.Name())
+	}
+	if want := "404.html _redirects current fonts"; strings.Join(got, " ") != want {
+		t.Errorf("the publish directory holds %v; want %s", got, want)
+	}
+	for _, p := range []string{"current/a/index.html", "current/commands/b/index.html", "current/new/index.html"} {
+		if _, err := os.Stat(filepath.Join(out, p)); err != nil {
+			t.Errorf("missing %s", p)
+		}
+	}
+	if !strings.Contains(read(t, filepath.Join(out, "current", "a", "index.html")), "of 0.11.0") {
+		t.Error("/current/ is not built from the newest release, v0.11.0")
+	}
+	if got := read(t, filepath.Join(out, "_redirects")); got != "/  /current/  301\n" {
+		t.Errorf("_redirects = %q", got)
+	}
+	for page, want := range map[string]string{
+		"current/index.html":     "https://docs.example/current/",
+		"current/a/index.html":   "https://docs.example/current/a/",
+		"current/new/index.html": "https://docs.example/current/new/",
+	} {
+		if got := canonical(t, filepath.Join(out, page)); got != want {
+			t.Errorf("%s canonical = %s; want %s", page, got, want)
+		}
+	}
+	page := read(t, filepath.Join(out, "current", "a", "index.html"))
+	if strings.Contains(page, "rf-versions") || len(switcher(t, filepath.Join(out, "current", "a", "index.html"))) > 0 {
+		t.Error("/current/a/ has a version switcher; want none with one release")
+	}
+	if !strings.Contains(page, "0.11.0") {
+		t.Error("/current/a/ does not name its version, 0.11.0")
+	}
+}
+
+func TestBuildRefusesBadPublish(t *testing.T) {
+	for _, in := range []buildInput{
+		{publish: publishCurrent, lines: []string{"0.10"}},
+		{publish: publishLines},
+		{publish: "all", lines: []string{"0.10"}},
+		{},
+	} {
+		in.root, in.out, in.baseURL, in.hugo, in.log = t.TempDir(), filepath.Join(t.TempDir(), "public"), "https://docs.example/", "hugo-is-not-reached", &bytes.Buffer{}
+		in.src = dirSource{dir: t.TempDir()}
+		if err := build(in); err == nil || !strings.Contains(err.Error(), "publish") {
+			t.Errorf("build with publish %q, lines %v = %v; want a refusal naming publish", in.publish, in.lines, err)
+		}
+	}
+}
+
 func TestBuildRefusesChecksumMismatch(t *testing.T) {
 	root, rels := siteRoot(t), releases(t)
 	bundle := filepath.Join(rels, "v0.11.0", bundleName)
@@ -181,7 +250,7 @@ func TestBuildRefusesChecksumMismatch(t *testing.T) {
 	}
 	out := filepath.Join(t.TempDir(), "public")
 	err := build(buildInput{
-		root: root, out: out, baseURL: "https://docs.example/",
+		root: root, out: out, baseURL: "https://docs.example/", publish: publishLines,
 		lines: []string{"0.10", "0.11"}, src: dirSource{dir: rels}, hugo: "hugo-is-not-reached", log: &bytes.Buffer{},
 	})
 	if err == nil || !strings.Contains(err.Error(), "refusing the bundle") || !strings.Contains(err.Error(), "v0.11.0") {
@@ -202,7 +271,7 @@ func TestBuildRefusesManifestMismatch(t *testing.T) {
 		t.Fatal(err)
 	}
 	err := build(buildInput{
-		root: root, out: filepath.Join(t.TempDir(), "public"), baseURL: "https://docs.example/",
+		root: root, out: filepath.Join(t.TempDir(), "public"), baseURL: "https://docs.example/", publish: publishLines,
 		lines: []string{"0.10"}, src: dirSource{dir: rels}, hugo: "hugo-is-not-reached", log: &bytes.Buffer{},
 	})
 	if err == nil || !strings.Contains(err.Error(), "manifest says") {

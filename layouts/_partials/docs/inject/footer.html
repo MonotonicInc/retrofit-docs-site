@@ -1,0 +1,12 @@
+{{- /*
+  The pre-1.0 note under every page: one sentence, naming no version (the
+  top bar names it), pointing at the release notes. It drops out once the
+  manifest's version reaches 1.0, and on the release notes page itself.
+*/ -}}
+{{- if hasPrefix (string hugo.Data.manifest.version) "0." -}}
+{{- with site.GetPage "/release-notes" -}}
+{{- if not (.Eq $) }}
+<p class="rf-prerelease">Before 1.0, any release may change behavior; the <a href="{{ .RelPermalink }}">release notes</a> list what changed.</p>
+{{- end -}}
+{{- end -}}
+{{- end -}}
