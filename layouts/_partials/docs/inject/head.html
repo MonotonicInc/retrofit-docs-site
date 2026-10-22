@@ -1,0 +1,5 @@
+{{- partialCached "manifest-check.html" . "manifest-check" -}}
+{{- /* Preview and branch deploys set HUGO_PARAMS_NOINDEX (netlify.toml). */ -}}
+{{- if site.Params.noindex }}
+<meta name="robots" content="noindex,nofollow">
+{{- end }}

@@ -1,0 +1,23 @@
+{{- /*
+  Build guard: every page manifest.json names must be a page this build
+  renders. A missing manifest, or a manifest page with no content file,
+  fails the build rather than publishing a site with a hole in it. Called
+  through partialCached from docs/inject/head.html, so it runs once.
+*/ -}}
+{{- with hugo.Data.manifest -}}
+  {{- $n := 0 -}}
+  {{- range .sections -}}
+    {{- range .pages -}}
+      {{- $path := printf "/%s" (strings.TrimSuffix ".md" .path) -}}
+      {{- if not (site.GetPage $path) -}}
+        {{- errorf "manifest-check: manifest page %q has no page in this build" .path -}}
+      {{- end -}}
+      {{- $n = add $n 1 -}}
+    {{- end -}}
+  {{- end -}}
+  {{- if eq $n 0 -}}
+    {{- errorf "manifest-check: manifest.json names no pages" -}}
+  {{- end -}}
+{{- else -}}
+  {{- errorf "manifest-check: no manifest.json; run `make tree` to write _tree/ from retrofit" -}}
+{{- end -}}

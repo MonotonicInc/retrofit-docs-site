@@ -1,0 +1,71 @@
+baseURL = "https://docs.retrofit.sh/"
+locale = "en-us"
+title = "retrofit"
+
+# Nothing here uses taxonomies; without this Hugo builds empty /categories/
+# and /tags/ pages and lists them in the sitemap.
+disableKinds = ["taxonomy", "term"]
+
+# The docs tree names its files after commands (retrofit-data-capture.md);
+# keep the paths exactly as the generator writes them.
+disablePathToLower = true
+
+enableRobotsTXT = false
+
+# The theme, pinned in go.mod. Update with
+#   hugo mod get github.com/alex-shpak/hugo-book@<commit>
+[module]
+  [module.hugoVersion]
+    min = "0.146.0"
+
+  [[module.imports]]
+    path = "github.com/alex-shpak/hugo-book"
+
+  # Declaring any mount drops Hugo's defaults, so every component this
+  # repository supplies is listed.
+  #
+  # No docs content is committed. `make build` and `make serve` write the
+  # tree from retrofit into _tree/ (retrofit's `go run ./cmd/docs`), and
+  # these two mounts read it: the pages, and the manifest that names them.
+  [[module.mounts]]
+    source = "_tree/content"
+    target = "content"
+  [[module.mounts]]
+    source = "_tree/manifest.json"
+    target = "data/manifest.json"
+
+  [[module.mounts]]
+    source = "layouts"
+    target = "layouts"
+  [[module.mounts]]
+    source = "assets"
+    target = "assets"
+  [[module.mounts]]
+    source = "static"
+    target = "static"
+
+[markup]
+  [markup.goldmark.renderer]
+    unsafe = true
+  [markup.tableOfContents]
+    startLevel = 2
+    endLevel = 3
+
+[params]
+  # The generated pages sit at the content root, so the menu renders from
+  # there. D2 replaces the file tree with the manifest's sections.
+  BookSection = "/"
+
+  BookTheme = "light"
+  BookToC = true
+  BookSearch = true
+
+  # The generated prose links its siblings as `import.md`. Portable links
+  # resolve those to the page's URL, and 'error' fails the build when one
+  # names a page the tree does not have.
+  BookPortableLinks = "error"
+
+  # Off: no comments, no "edit this page" (the source is private), no
+  # last-change link, no service worker.
+  BookComments = false
+  BookServiceWorker = false

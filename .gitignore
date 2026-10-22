@@ -6,7 +6,7 @@
 .idea/
 .vscode/
 .worktrees/
-_*/
+/_*/
 .DS_Store
 *.swp
 
