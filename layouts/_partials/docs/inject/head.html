@@ -3,3 +3,18 @@
 {{- if site.Params.noindex }}
 <meta name="robots" content="noindex,nofollow">
 {{- end }}
+{{- /*
+  retrofit-site's design system: the font faces and the tokens, copied
+  verbatim (style.lock). hugo-book's restyle onto them is
+  assets/styles/custom.css.
+
+  tokens.css names its spacing scale --space-1 to --space-9, and hugo-book
+  uses --space-1, --space-4 and --space-8 for its own layout (1px, 0.25rem,
+  0.5rem), so loading both as written breaks one or the other. The copy
+  stays byte-identical for the drift check; the build renames the scale to
+  --rf-space-N here, and the restyle reads it by that name.
+*/ -}}
+{{- $tokens := resources.Get "css/tokens.css" -}}
+{{- $tokens = resources.FromString "css/tokens.rf.css" (replaceRE `--space-(\d+)\b` "--rf-space-$1" $tokens.Content) -}}
+{{- $css := slice (resources.Get "css/fonts.css") $tokens | resources.Concat "css/design-system.css" | resources.Minify | resources.Fingerprint }}
+<link rel="stylesheet" href="{{ $css.RelPermalink }}" integrity="{{ $css.Data.Integrity }}" crossorigin="anonymous">

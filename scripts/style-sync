@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+#
+# Copy retrofit-site's design system files into this repository, verbatim,
+# from one retrofit-site commit, and pin that commit and each file's SHA-256
+# in style.lock. scripts/style-check holds the copies to the pin.
+#
+# Usage: scripts/style-sync [commit]   (default: HEAD of the checkout)
+# RETROFIT_SITE is a retrofit-site checkout (default ../retrofit-site). The
+# files come from the commit (git show), never the working tree, so an
+# uncommitted edit there cannot leak in.
+
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+SITE="${RETROFIT_SITE:-../retrofit-site}"
+REF="${1:-HEAD}"
+
+# The copied set: the tokens, the font faces, the mark as favicon, the fonts,
+# and their licenses (the SIL OFL requires the license to travel with the
+# fonts).
+FILES=(
+  assets/css/tokens.css
+  assets/css/fonts.css
+  static/favicon.svg
+)
+
+git -C "$SITE" rev-parse --git-dir >/dev/null 2>&1 || {
+  echo "style-sync: RETROFIT_SITE=$SITE is not a git checkout" >&2; exit 1; }
+COMMIT="$(git -C "$SITE" rev-parse --verify "$REF^{commit}")"
+while IFS= read -r f; do FILES+=("$f"); done < <(
+  git -C "$SITE" ls-tree -r --name-only "$COMMIT" -- static/fonts |
+    grep -E '\.woff2$|^static/fonts/licenses/')
+
+rm -rf static/fonts
+for f in "${FILES[@]}"; do
+  mkdir -p "$(dirname "$f")"
+  git -C "$SITE" show "$COMMIT:$f" > "$f"
+done
+
+{
+  echo "# retrofit-site files copied verbatim by scripts/style-sync, and the"
+  echo "# SHA-256 each had at that commit. scripts/style-check holds the copies"
+  echo "# to these lines. Do not edit the copies or this file by hand."
+  echo "commit $COMMIT"
+  for f in "${FILES[@]}"; do
+    shasum -a 256 "$f"
+  done
+} > style.lock
+
+echo "style-sync: ${#FILES[@]} files from retrofit-site ${COMMIT:0:9}"

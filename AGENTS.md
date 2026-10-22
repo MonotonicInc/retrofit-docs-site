@@ -36,6 +36,14 @@ here; change `docs/nav.yaml` in retrofit.
 ## Design and voice
 
 retrofit-site's `avw_retrofit-design-system.md` governs what a reader sees.
+`assets/css/tokens.css`, `assets/css/fonts.css`, `static/fonts/` and
+`static/favicon.svg` are verbatim copies pinned in `style.lock`: never edit
+them here. Change them in retrofit-site, commit there, then `make style-sync`.
+`make style-check` fails on any difference, and CI runs it. The restyle is
+`assets/styles/custom.css`; it reads the tokens' spacing scale as
+`--rf-space-N` (the build renames it, since hugo-book uses `--space-N` too)
+and spends nothing the Don't list rules out: no radius, shadows or
+gradients, and no spot on anything you can click.
 The docs register, the design system's Voice rules for reference docs, lives
 in retrofit. Rendered copy this repository adds (layouts, `hugo.toml` params
 that reach the page) follows both: no em dashes or middots, and the name is
@@ -46,5 +54,7 @@ lowercase `retrofit`.
 - Hugo: `HUGO_VERSION` in `netlify.toml`, matching retrofit-site's.
 - hugo-book: `go.mod`. Move it with
   `hugo mod get github.com/alex-shpak/hugo-book@<commit>`, then build,
-  check the warnings, and diff `layouts/baseof.html` and
-  `layouts/_partials/docs/prev-next.html` against the theme's copies.
+  check the warnings, and diff `layouts/baseof.html`,
+  `layouts/_partials/docs/prev-next.html` and
+  `layouts/_partials/docs/html-head-favicon.html` against the theme's copies.
+- Design system: `style.lock` (a retrofit-site commit).

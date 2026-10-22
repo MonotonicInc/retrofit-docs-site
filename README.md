@@ -46,6 +46,25 @@ the one marked active.
 - **Off**: edit-this-page and last-change links, comments, the service
   worker. Light theme only; the design system has no dark mode.
 
+## Style
+
+retrofit-site's design system (`avw_retrofit-design-system.md` there) governs
+how the site looks. Its `tokens.css`, `fonts.css`, fonts and favicon are
+copied here verbatim and pinned in `style.lock`:
+
+```sh
+make style-check              # copies against style.lock, and against ../retrofit-site's HEAD if present
+make style-sync               # re-copy from ../retrofit-site at HEAD (or REF=<commit>) and rewrite style.lock
+```
+
+Never edit a copy here; change it in retrofit-site, commit there, then
+`make style-sync`. CI runs `make style-check`.
+
+`assets/styles/custom.css` restyles hugo-book onto the tokens. tokens.css and
+hugo-book both define `--space-1`, `--space-4` and `--space-8`, with different
+values, so the build loads tokens.css with its scale renamed `--rf-space-N`
+(`layouts/_partials/docs/inject/head.html`); the copy itself is unchanged.
+
 ## Layout
 
 ```
@@ -53,8 +72,13 @@ hugo.toml                     config: the theme import, the _tree mounts, hugo-b
 go.mod, go.sum                the hugo-book pin
 Makefile                      tree, build, serve, check, clean
 netlify.toml                  Hugo pin, contexts, headers
+style.lock                    the retrofit-site commit and SHA-256 of each copied file
 scripts/check-nav             the rendered navigation against the manifest
-assets/styles/custom.css      hugo-book's style hook: top bar and pane layout
+scripts/style-sync            copy the design system files from retrofit-site
+scripts/style-check           hold the copies to style.lock
+assets/css/                   tokens.css, fonts.css (copies)
+static/fonts/, favicon.svg    fonts, their licenses, the mark (copies)
+assets/styles/custom.css      hugo-book's style hook: the restyle onto the tokens, top bar and pane layout
 layouts/
   baseof.html                 hugo-book's, with the top bar, the manifest menu and a TOC-only right pane
   _partials/
@@ -62,11 +86,13 @@ layouts/
     nav.html                  the left navigation from manifest.json
     manifest-check.html       build guard: every manifest page renders
     docs/prev-next.html       hugo-book's, in manifest order
-    docs/inject/head.html     hugo-book hook: the guard, noindex on previews
+    docs/html-head-favicon.html  hugo-book's, linking the mark only
+    docs/inject/head.html     hugo-book hook: the guard, noindex on previews, the design system CSS
 ```
 
-`layouts/baseof.html` and `layouts/_partials/docs/prev-next.html` replace
-hugo-book's files of the same name. When the pin moves, diff them against the
+`layouts/baseof.html`, `layouts/_partials/docs/prev-next.html` and
+`layouts/_partials/docs/html-head-favicon.html` replace hugo-book's files of
+the same name. When the pin moves, diff them against the
 theme's copies.
 
 To move the hugo-book pin:

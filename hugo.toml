@@ -45,6 +45,11 @@ enableRobotsTXT = false
     target = "static"
 
 [markup]
+  # Code blocks are literals in ink on --panel, like every other literal.
+  # Hugo's default writes a dark monokai palette inline; with classes and no
+  # highlighting stylesheet, Chroma's markup carries no colour.
+  [markup.highlight]
+    noClasses = false
   [markup.goldmark.renderer]
     unsafe = true
   [markup.tableOfContents]

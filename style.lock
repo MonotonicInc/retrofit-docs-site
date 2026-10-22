@@ -1,0 +1,17 @@
+# retrofit-site files copied verbatim by scripts/style-sync, and the
+# SHA-256 each had at that commit. scripts/style-check holds the copies
+# to these lines. Do not edit the copies or this file by hand.
+commit 18c9918fbbfdfa588b0657d902475cb2df987f8e
+caf38e9557ce7bc142c32a839b6cbbfdbebc6b3b66ecd3962954a98f19ce0e03  assets/css/tokens.css
+64d6382ed0bbc97afb34c263c13fd7ffc3251472a62983f307849db5a9c42e50  assets/css/fonts.css
+079910befcffb4f760528645d5a362948096493a630846e4057165cd5b5a8d55  static/favicon.svg
+5b4fed1daa90708aa9c6ee1190abca9dc22164a1c1def0020386e46b61038cfb  static/fonts/DepartureMono-Regular.woff2
+49ce58b41a0e1cb921c0f58d9a5b8b96a2cc21437c7066f3ba4f24873076d131  static/fonts/IBMPlexMono-Regular.woff2
+4dbb53a002b701005c7eb5d0fc049a3abd7c31821714ab5fdc33c189ceadeb75  static/fonts/IBMPlexSansVar-Italic-Latin1.woff2
+a18d94ea83c93f0a465d0976d8bc8ecbb031225dbaf76fd201d4e724a972034f  static/fonts/IBMPlexSansVar-Latin1.woff2
+ba5feed9ebae36e3b6ae3486052c90f4f42a294fa67a7c9415985175d19c4c82  static/fonts/IBMPlexSerif-Italic.woff2
+fb760656271f7e216eb93c16f4623bb54ae27152886ed0209bd4f67b19775817  static/fonts/IBMPlexSerif-Regular.woff2
+4a9324f32b9675734be5cee0ef7675bc286904ca71a2997057365cde481b23cb  static/fonts/IBMPlexSerif-SemiBold.woff2
+b65e42750f3cb65437a97f4dfd781c58f199259949db2341012be60e32500e83  static/fonts/licenses/DepartureMono-LICENSE
+91c25c350d3cac39da2736d74f7ba37ef648f5237a4e330a240615bc8d8c4360  static/fonts/licenses/IBMPlex-LICENSE.md
+37784b44044a4ffd9256702b7c0982c37e5c8887ba90c6dca0479aea93dc898d  static/fonts/licenses/IBMPlexMono-LICENSE

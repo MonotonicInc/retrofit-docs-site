@@ -1,0 +1,71 @@
+/* ────────────────────────────────────────────────────────────────────
+   FONT FACES — self-hosted from /fonts/
+   ────────────────────────────────────────────────────────────────────
+
+   IBM Plex Serif             — body serif. Sentences. IBM, SIL OFL.
+                                Regular, SemiBold and Italic; the italic is
+                                real rather than synthesized.
+   IBM Plex Sans Var          — headings and labels. IBM, SIL OFL. Latin1 subset.
+   IBM Plex Mono Regular      — code blocks, ASCII. IBM, SIL OFL.
+   Departure Mono             — display mono (kicker, brand, footer).
+                                Helena Zhang, public domain.
+
+   Files at /fonts/, licenses at /fonts/licenses/. font-display: swap
+   keeps the page legible during font load (FOUT, not FOIT).
+*/
+
+@font-face {
+  font-family: "IBM Plex Serif";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/IBMPlexSerif-Regular.woff2") format("woff2");
+}
+@font-face {
+  font-family: "IBM Plex Serif";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/IBMPlexSerif-SemiBold.woff2") format("woff2");
+}
+@font-face {
+  font-family: "IBM Plex Serif";
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/IBMPlexSerif-Italic.woff2") format("woff2");
+}
+@font-face {
+  font-family: "IBM Plex Sans Var";
+  font-style: normal;
+  font-weight: 100 700;
+  font-display: swap;
+  src: url("/fonts/IBMPlexSansVar-Latin1.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+                 U+0304, U+0308, U+0329, U+2000-206F, U+2074, U+20AC, U+2122, U+2191,
+                 U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "IBM Plex Sans Var";
+  font-style: italic;
+  font-weight: 100 700;
+  font-display: swap;
+  src: url("/fonts/IBMPlexSansVar-Italic-Latin1.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+                 U+0304, U+0308, U+0329, U+2000-206F, U+2074, U+20AC, U+2122, U+2191,
+                 U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/IBMPlexMono-Regular.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Departure Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/DepartureMono-Regular.woff2") format("woff2");
+}

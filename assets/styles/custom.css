@@ -1,42 +1,161 @@
 /*
-  hugo-book loads this file last (assets/styles/index.yaml in the theme).
+  hugo-book loads this file last (assets/styles/index.yaml in the theme), so
+  it is the hook that restyles the theme onto retrofit-site's design system.
 
-  Layout only: the top bar and the panes under it. The design system's
-  tokens and restyle come in separately (kata 5p0s).
+  The tokens (--paper, --ink, --spot, the faces, --measure) come from
+  assets/css/tokens.css, a verbatim copy loaded by
+  _partials/docs/inject/head.html. Its spacing scale arrives renamed
+  --rf-space-N; --space-N below is hugo-book's own (1px to 1rem), used only
+  for the theme's layout.
+
+  avw_retrofit-design-system.md in retrofit-site is the authority. What it
+  rules out here: radius, shadows, gradients, the spot on anything you can
+  click, colour outside ink and the one spot, transitions other than 90ms
+  linear.
 */
 
+/* ───── hugo-book's variables, onto the tokens ─────
+   themes.css sets these inside @layer theme, so these unlayered values win
+   whatever its selectors. Links carry ink and a rule, never the spot. The
+   theme's accents (hint shortcodes) collapse to ink-soft: the press has
+   two colours. */
 :root {
+  --body-background: var(--paper);
+  --body-font-color: var(--ink);
+  --color-link: var(--ink);
+  --color-visited-link: var(--ink);
+  --gray-100: var(--panel);
+  --gray-200: var(--rule);
+  --gray-500: var(--rule-strong);
+
+  --color-accent-default: var(--ink-soft);
+  --color-accent-note: var(--ink-soft);
+  --color-accent-tip: var(--ink-soft);
+  --color-accent-important: var(--ink-soft);
+  --color-accent-warning: var(--ink-soft);
+  --color-accent-caution: var(--ink-soft);
+
+  --border-radius: 0;
+
+  /* Content at the measure: the page box is the measure plus its padding.
+     ch resolves on .book-page, which sets body serif at 1rem. */
+  --content-max-width: calc(var(--measure) + 2 * var(--space-16));
+
   --rf-topbar-height: 3rem;
 }
 
+html {
+  font-family: var(--font-serif);
+}
+
+body {
+  font-feature-settings: "ss01", "cv11", "kern";
+}
+
+::selection {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+/* ───── interaction ─────
+   Focus is visible everywhere: a 2px spot ring, 2px out. One of the few
+   places the spot appears. Transitions are 90ms linear, and none under
+   reduced motion. */
+:focus-visible,
+input.toggle:focus-visible + label,
+label:has(input.toggle:focus-visible) {
+  outline: 2px solid var(--spot);
+  outline-offset: 2px;
+}
+
+nav a {
+  transition: color 90ms linear;
+}
+
+nav a[href]:hover,
+nav a[role=button]:hover {
+  opacity: 1;
+  color: var(--ink);
+}
+
+.book-menu-content,
+.book-toc-content {
+  transition-duration: 90ms;
+  transition-timing-function: linear;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  * { transition: none !important; animation: none !important; }
+}
+
+/* ───── top bar ─────
+   The running head: the name in the mark face, search as a form field,
+   the version as a literal in quiet metadata. Hairline below. */
 .rf-topbar {
   position: sticky;
   top: 0;
   z-index: 2;
   height: var(--rf-topbar-height);
-  background: var(--body-background);
-  border-bottom: var(--space-1) solid var(--gray-200);
+  background: var(--paper);
+  border-bottom: 1px solid var(--rule);
 }
 
 .rf-topbar-content {
   display: flex;
   align-items: center;
-  gap: var(--space-16);
+  gap: var(--rf-space-4);
   height: 100%;
   max-width: var(--layout-max-width);
   margin: 0 auto;
   padding: 0 var(--space-16);
 }
 
-.rf-topbar-name {
-  color: var(--body-font-color);
-  font-size: 1.25rem;
+.rf-topbar-name,
+.rf-topbar-name:hover {
+  font-family: var(--font-mark);
+  font-size: 1.1rem;
+  color: var(--ink);
+  opacity: 1;
+}
+
+.rf-topbar-version {
+  font-family: var(--font-mono);
+  font-size: 0.84rem;
+  color: var(--hush);
 }
 
 .rf-topbar .book-search {
   flex: 0 1 20rem;
   margin: 0;
   margin-inline-start: auto;
+}
+
+/* Form field: square, one --rule-strong rule, no fill. Hover and focus
+   firm the rule to ink; focus adds the spot ring. */
+.book-search input {
+  padding: 0.35rem 0.6rem;
+  border: 1px solid var(--rule-strong);
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  transition: border-color 90ms linear;
+}
+
+.book-search input:hover,
+.book-search input:focus {
+  border-color: var(--ink);
+}
+
+.book-search input::placeholder {
+  color: var(--hush);
+}
+
+/* The theme's loading spinner is a rotating circle; the index loads in a
+   moment, and a radius is on the Don't list. */
+.book-search .book-search-spinner {
+  display: none !important;
 }
 
 /* Results drop below the input, over the page, while search has focus. */
@@ -47,9 +166,11 @@
   max-height: 70vh;
   overflow-y: auto;
   margin: 0;
-  padding: 0 var(--space-16) var(--space-16);
-  background: var(--body-background);
-  border: var(--space-1) solid var(--gray-200);
+  padding: 0 var(--rf-space-3) var(--rf-space-3);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-top: 0;
+  font-family: var(--font-sans);
 }
 
 .rf-topbar #book-search-results:empty,
@@ -57,8 +178,9 @@
   display: none;
 }
 
-.rf-topbar-version {
-  font-size: var(--font-size-smaller);
+.book-search ul a {
+  color: var(--ink);
+  font-weight: 600;
 }
 
 /* The fixed side panels start under the top bar, not at the top of the viewport. */
@@ -67,8 +189,213 @@
   top: var(--rf-topbar-height);
 }
 
-/* A navigation section's title is a label, not a link (_partials/nav.html). */
+/* ───── left navigation ─────
+   Sans, as nav is. Entries in ink-soft; the current page in ink at 600,
+   since the spot is never spent on anything you can click. Section titles
+   are labels: sans caps, small, tracked. */
+.book-menu {
+  font-family: var(--font-sans);
+}
+
+.book-menu a[href] {
+  color: var(--ink-soft);
+}
+
+.book-menu a.active {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.book-section-flat {
+  margin: var(--rf-space-5) 0;
+}
+
 .book-section-flat > span {
   display: block;
-  font-weight: bolder;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+/* ───── table of contents ───── */
+.book-toc {
+  font-family: var(--font-sans);
+}
+
+.book-toc a[href] {
+  color: var(--ink-soft);
+}
+
+/* ───── footer: previous and next ───── */
+.book-footer {
+  font-family: var(--font-sans);
+}
+
+.book-footer a[href] {
+  color: var(--ink-soft);
+}
+
+/* ───── the page ───── */
+.markdown {
+  line-height: 1.72;
+}
+
+/* Page title: the one level set large. */
+.markdown h1 {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: clamp(2.1rem, 3.4vw + 1rem, 2.8rem);
+  line-height: 1.16;
+  letter-spacing: -0.005em;
+  max-width: 33ch;
+  text-wrap: balance;
+  margin-bottom: var(--rf-space-5);
+}
+
+/* Section head: sans caps at body size. Hierarchy comes from weight, case
+   and space, not size. Reference docs go deeper than a demo page's two
+   levels, so the levels under it keep the face and weight and drop the
+   caps; they are not set larger. */
+.markdown h2,
+.markdown h3,
+.markdown h4,
+.markdown h5,
+.markdown h6 {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 1rem;
+  line-height: 1.35;
+  color: var(--ink);
+}
+
+.markdown h2 {
+  margin-top: var(--rf-space-7);
+  margin-bottom: var(--rf-space-4);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.markdown h3 {
+  margin-top: var(--rf-space-6);
+  margin-bottom: var(--rf-space-3);
+}
+
+.markdown h4,
+.markdown h5,
+.markdown h6 {
+  margin-top: var(--rf-space-5);
+  margin-bottom: var(--rf-space-2);
+  color: var(--ink-soft);
+}
+
+.markdown p {
+  margin: 0 0 var(--rf-space-4);
+}
+
+/* Links: ink with a --rule-strong underline, full ink on hover. */
+.markdown a[href],
+.markdown a[href]:visited {
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-color: var(--rule-strong);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+  transition: text-decoration-color 90ms linear;
+}
+
+.markdown a[href]:hover {
+  text-decoration-color: var(--ink);
+}
+
+.markdown h1 a.anchor,
+.markdown h2 a.anchor,
+.markdown h3 a.anchor,
+.markdown h4 a.anchor,
+.markdown h5 a.anchor,
+.markdown h6 a.anchor {
+  text-decoration: none;
+  color: var(--hush);
+}
+
+/* Literals. Mono means literal: a string you could copy, paste or verify.
+   Inline, the --panel chip; in a block, the same screen, no rule. */
+.markdown code {
+  padding: 0.06rem 0.35rem;
+  border: 0;
+  background: var(--panel);
+  font-family: var(--font-mono);
+  font-size: 0.84em;
+  color: var(--ink-soft);
+}
+
+.markdown pre {
+  padding: var(--rf-space-3) var(--rf-space-4);
+  border: 0;
+  background: var(--panel);
+  line-height: 1.5;
+}
+
+.markdown pre code {
+  padding: 0;
+  background: none;
+  font-size: 0.84rem;
+}
+
+.markdown .highlight {
+  margin: 0 0 var(--rf-space-4);
+}
+
+/* A literal in a table cell stays on one line rather than breaking at its
+   hyphens (advisory codes); the table scrolls when it must. */
+.markdown td code {
+  white-space: nowrap;
+}
+
+/* Tables: rules between rows, none between cells; a strong rule under the
+   head, whose cells are labels. */
+.markdown table tr th,
+.markdown table tr td {
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+  padding: var(--rf-space-1) var(--rf-space-3);
+  padding-inline-start: 0;
+  vertical-align: top;
+}
+
+.markdown table tr th {
+  border-bottom-color: var(--rule-strong);
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+/* Blockquote: a hairline on the inside edge, no fill. */
+.markdown blockquote {
+  padding: 0 var(--rf-space-4);
+  color: var(--ink-soft);
+}
+
+.markdown blockquote:before {
+  width: 1px;
+  background: var(--rule-strong);
+}
+
+.markdown hr {
+  height: 1px;
+  background: var(--rule);
+}
+
+/* ───── narrow screens ─────
+   The menu slides over the page; the theme casts a shadow from it, which
+   is on the Don't list, so a hairline edge does the work instead. */
+@media screen and (max-width: 56rem) {
+  body:has(#menu-control:checked) .book-menu .book-menu-content {
+    box-shadow: none;
+    border-inline-end: 1px solid var(--rule);
+  }
 }

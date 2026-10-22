@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- retrofit favicon: the earth ground symbol (U+23DA) in blueprint blue
+       on engineering vellum. Stem plus three narrowing bars, which is the
+       glyph exactly; it is a standard symbol from engineering notation
+       rather than an invented one, so it carries a legend a reader may
+       already know. Ground is the zero reference every measurement is
+       taken against, which is what a sealed schema version is.
+
+       No rounded corner: nothing in this system is rounded
+       (running-head.css, "A square, not a disc").
+
+       The two values below mirror the paper and spot tokens in
+       assets/css/tokens.css and are hand-kept in sync. Hugo copies
+       static/ byte-for-byte, so a file here is never parsed as a template
+       and cannot read them. See the design system's "Hardcoded hex
+       outside tokens.css" open item.
+
+       Token names are written without their leading dashes on purpose:
+       a double hyphen is illegal inside an XML comment and makes the
+       whole file fail to parse. -->
+  <rect width="32" height="32" fill="#f1f2ef"/>
+  <g fill="none" stroke="#204e6e" stroke-width="2.4" stroke-linecap="round">
+    <!-- stem -->
+    <path d="M16 7 V16"/>
+    <!-- three ground bars, narrowing -->
+    <path d="M8 16 H24"/>
+    <path d="M11 20.5 H21"/>
+    <path d="M14 25 H18"/>
+  </g>
+</svg>

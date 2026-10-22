@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+#
+# Hold the design system copies to style.lock. Fails when:
+#
+#   - a copy differs from the SHA-256 the lock pins (edited here), or a
+#     pinned file is missing, or a file under static/fonts/ is not pinned;
+#   - a retrofit-site checkout is present (RETROFIT_SITE, default
+#     ../retrofit-site) and a pinned file differs at its HEAD, or HEAD adds
+#     a file to the copied set (drifted there; run scripts/style-sync).
+#
+# The second check is skipped, with a note, when there is no checkout, as in
+# this repository's CI, which cannot read the private retrofit-site.
+#
+# Usage: scripts/style-check
+
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+LOCK=style.lock
+SITE="${RETROFIT_SITE:-../retrofit-site}"
+fail=0
+
+[ -f "$LOCK" ] || { echo "style-check: no $LOCK; run scripts/style-sync" >&2; exit 1; }
+COMMIT="$(awk '$1 == "commit" {print $2}' "$LOCK")"
+[ -n "$COMMIT" ] || { echo "style-check: $LOCK names no commit" >&2; exit 1; }
+
+# 1. The copies against the lock.
+pinned=()
+while read -r sum path; do
+  pinned+=("$path")
+  if [ ! -f "$path" ]; then
+    echo "style-check: $path is pinned but missing" >&2; fail=1; continue
+  fi
+  have="$(shasum -a 256 "$path" | awk '{print $1}')"
+  if [ "$have" != "$sum" ]; then
+    echo "style-check: $path differs from the copy of retrofit-site ${COMMIT:0:9}; edit it in retrofit-site, then run scripts/style-sync" >&2
+    fail=1
+  fi
+done < <(grep -Ev '^(#|commit )' "$LOCK")
+
+while IFS= read -r f; do
+  printf '%s\n' "${pinned[@]}" | grep -qxF "$f" || {
+    echo "style-check: $f is not in $LOCK; the fonts come from retrofit-site through scripts/style-sync" >&2; fail=1; }
+done < <(find static/fonts -type f 2>/dev/null | sort)
+
+# 2. The lock against retrofit-site's HEAD, when a checkout is here.
+if git -C "$SITE" rev-parse --git-dir >/dev/null 2>&1; then
+  head="$(git -C "$SITE" rev-parse HEAD)"
+  for path in "${pinned[@]}"; do
+    want="$(grep -E " $path\$" "$LOCK" | awk '{print $1}')"
+    if ! git -C "$SITE" cat-file -e "HEAD:$path" 2>/dev/null; then
+      echo "style-check: $path is gone from retrofit-site ${head:0:9}; run scripts/style-sync" >&2; fail=1; continue
+    fi
+    there="$(git -C "$SITE" show "HEAD:$path" | shasum -a 256 | awk '{print $1}')"
+    if [ "$there" != "$want" ]; then
+      echo "style-check: $path changed in retrofit-site since ${COMMIT:0:9} (now ${head:0:9}); run scripts/style-sync" >&2
+      fail=1
+    fi
+  done
+  while IFS= read -r f; do
+    printf '%s\n' "${pinned[@]}" | grep -qxF "$f" || {
+      echo "style-check: retrofit-site ${head:0:9} adds $f; run scripts/style-sync" >&2; fail=1; }
+  done < <(git -C "$SITE" ls-tree -r --name-only HEAD -- static/fonts | grep -E '\.woff2$|^static/fonts/licenses/')
+else
+  echo "style-check: note: no retrofit-site checkout at $SITE; checked the copies against $LOCK only"
+fi
+
+if [ "$fail" -ne 0 ]; then
+  exit 1
+fi
+echo "style-check: ok (${#pinned[@]} files, retrofit-site ${COMMIT:0:9})"

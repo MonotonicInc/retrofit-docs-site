@@ -1,0 +1,87 @@
+/* ────────────────────────────────────────────────────────────────────
+   retrofit.sh — design tokens
+   ────────────────────────────────────────────────────────────────────
+
+   COLOUR
+   Ink plus one spot, with everything else a screen of those two against
+   the ground. The logic of a two colour press.
+
+   The ground is engineering vellum: a drafting stock, pale and faintly
+   green grey, closer to tracing paper than to parchment. It reads as a
+   chosen sheet rather than an off white default, and it sits well under
+   blue.
+
+   The spot is blueprint blue, spent on consequence — the thing carrying
+   the argument — never on anything you can click. Blue rather than red
+   because these are not hazards: NOT VALID is a correct, deliberate
+   specification. Two sanctioned placements per page. Links therefore
+   carry ink and a rule instead.
+
+   Contrast is verified. Ink on paper 13.7:1, ink-soft on paper 10.3:1,
+   spot on paper 7.9:1. --hush is the floor at 6.6:1 (AA), so it stays
+   reserved for incidental metadata and never carries body copy.
+
+   TYPE
+   Plex Serif, Sans, and Mono were drawn as one system on a shared
+   skeleton, for institutional documentation. Departure is the deliberate
+   outsider, a pixel face and the only element that says *computer*, so
+   it is scoped to the identity marks alone.
+
+   Nothing below this block reads a raw hex value — only these tokens.
+   ──────────────────────────────────────────────────────────────── */
+
+:root {
+  /* Ground and ink */
+  --paper:       #f1f2ef;
+  --ink:         #26251f;   /* body text, strong rules, borders */
+  --ink-soft:    #3c392e;   /* secondary prose, sidenote body, labels */
+  --hush:        #5a5544;   /* quiet metadata only */
+
+  /* The spot */
+  --spot:        #204e6e;   /* blueprint blue */
+
+  /* Screens of ink */
+  --rule:        color-mix(in srgb, var(--ink) 20%, transparent);  /* separators between blocks */
+  --rule-strong: color-mix(in srgb, var(--ink) 45%, transparent);  /* section divisions, link underlines */
+  --panel:       color-mix(in srgb, var(--ink)  7%, transparent);  /* literal backgrounds */
+
+  /* Screen of the spot. The system has always specified a spot literal as
+     blue ink on a faint blue screen of the same colour, and measured the
+     pair at 7.0:1, but the tint had no value of its own: four components
+     had each written the same color-mix by hand. 8%. */
+  --spot-panel:  color-mix(in srgb, var(--spot) 8%, var(--paper));
+
+  /* Sentences. If you read it rather than scan it, it is serif. */
+  --font-serif: "IBM Plex Serif", "Georgia", serif;
+  /* Headings and labels. Section heads, subheads, nav, breadcrumb. */
+  --font-sans:  "IBM Plex Sans Var", "Inter", ui-sans-serif, system-ui, sans-serif;
+  /* Literals. Strings you could copy, paste, or verify. */
+  --font-mono:  "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  /* The mark. Brand mark, corner stamp, colophon site mark. */
+  --font-mark:  "Departure Mono", "IBM Plex Mono", ui-monospace, monospace;
+
+  --maxw:    58rem;
+  --measure: 88ch;
+
+  /* Vertical rhythm. A geometric run at roughly 1.26, derived from the
+     values the mockup already used rather than imposed on them: every
+     spacing value in the system components snapped to a step within
+     0.1rem, except the three section paddings, which sat between steps
+     and were resolved downward to --space-7.
+
+     Block spacing reads only these. Anything smaller than --space-1 is
+     optical rather than rhythmic — a label to its value, a caption to
+     its image, a baseline nudge — and stays local to its component,
+     because those distances answer to type size, not to the page. Grid
+     geometry (the width of a hanging number column and the gap beside
+     it) likewise stays local. */
+  --space-1: 0.55rem;
+  --space-2: 0.7rem;
+  --space-3: 0.9rem;
+  --space-4: 1.1rem;
+  --space-5: 1.4rem;
+  --space-6: 1.75rem;
+  --space-7: 2.2rem;
+  --space-8: 2.75rem;
+  --space-9: 3.5rem;
+}
