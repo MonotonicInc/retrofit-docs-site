@@ -20,7 +20,15 @@ configuration only.
 make build        # RETROFIT=../retrofit by default
 make serve
 make check        # build, then scripts/check-nav
+make versions-test
 ```
+
+The published site is versioned: `make versions` builds each line in
+`versions.toml` from its release's docs bundle into `/X.Y/`, and the newest
+into `/current/` (README, Versions). A bundle is checked against its
+release's `checksums.txt`; never weaken or skip that check. `versions/` is
+its own Go module so `go mod tidy` cannot touch the Hugo module's `go.mod`
+at the root.
 
 Two checks fail the build: a page `manifest.json` names with no page in the
 build (`layouts/_partials/manifest-check.html`), and a link between docs to a
@@ -55,6 +63,7 @@ lowercase `retrofit`.
 - hugo-book: `go.mod`. Move it with
   `hugo mod get github.com/alex-shpak/hugo-book@<commit>`, then build,
   check the warnings, and diff `layouts/baseof.html`,
+  `layouts/_partials/docs/html-head.html`,
   `layouts/_partials/docs/prev-next.html` and
   `layouts/_partials/docs/html-head-favicon.html` against the theme's copies.
 - Design system: `style.lock` (a retrofit-site commit).

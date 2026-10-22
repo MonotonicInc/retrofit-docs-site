@@ -1,0 +1,16 @@
+{{- /*
+  The canonical link. On a versioned build (hugo.Data.versions, which
+  versions/ writes), /current/ is canonical: a page the newest line also
+  has names its /current/ copy, and the home page names /current/. A page
+  the newest line no longer has names itself. A single-tree build (make
+  build) has no versions data and every page names itself.
+*/ -}}
+{{- $url := .Permalink -}}
+{{- with hugo.Data.versions -}}
+  {{- $rel := partial "page-rel.html" $ -}}
+  {{- $current := index (where .lines "line" .current) 0 -}}
+  {{- if or (eq $rel "") (in $current.pages (printf "%s.md" (strings.TrimSuffix "/" $rel))) -}}
+    {{- $url = printf "%s%s" .currentURL $rel -}}
+  {{- end -}}
+{{- end -}}
+<link rel="canonical" href="{{ $url }}">

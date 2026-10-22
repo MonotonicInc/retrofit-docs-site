@@ -26,6 +26,15 @@ make build RETROFIT=~/src/retrofit
 make check                    # build, then check the rendered navigation against the manifest
 ```
 
+That is one docs tree, served at the root. The published site is versioned:
+
+```sh
+make versions                 # every line in versions.toml from its newest release on GitHub
+make fixture                  # pack this retrofit checkout's tree as a release under _fixtures/
+make versions RELEASES_DIR=_fixtures
+make versions-test            # the versions/ tests; they run Hugo
+```
+
 `make tree` runs `go run ./cmd/docs -out _tree` in the retrofit checkout.
 `hugo.toml` mounts `_tree/content` as the content directory and
 `_tree/manifest.json` as `data/manifest.json`. `_tree/` is ignored.
@@ -35,6 +44,28 @@ a link between docs names a page the tree does not have. `make check` adds
 `scripts/check-nav`: on every page, the navigation lists every manifest page
 in order under its section, every entry resolves, and the page's own entry is
 the one marked active.
+
+## Versions
+
+`versions.toml` lists the supported release lines. `make versions` (the
+`versions/` Go module) builds the site Netlify publishes:
+
+- each line from the docs bundle (`retrofit_docs.tar.gz`) of its newest full
+  release on `MonotonicHQ/retrofit` (tags `bin-vX.Y.Z`, later `vX.Y.Z`;
+  drafts and pre-releases skipped), checked against that release's
+  `checksums.txt` and refused on a mismatch or a manifest naming another
+  version;
+- one Hugo build per line at `/X.Y/`, and the newest again at `/current/`;
+- `/current/` is canonical on every page the newest line has
+  (`layouts/_partials/canonical.html`);
+- the version in the top bar opens the other lines, at the same page where
+  it exists (`layouts/_partials/topbar.html`);
+- the root: `_redirects` sends `/` to `/current/`, `/fonts/` (fonts.css
+  loads the faces from the root), and `404.html`.
+
+Every bundle is fetched and checked before anything is built, so a refusal
+leaves no partial site. Until the first release carries a bundle (v0.10.0),
+`make versions` refuses with "no full release"; use a fixture.
 
 ## Chrome
 
@@ -70,9 +101,11 @@ values, so the build loads tokens.css with its scale renamed `--rf-space-N`
 ```
 hugo.toml                     config: the theme import, the _tree mounts, hugo-book params
 go.mod, go.sum                the hugo-book pin
-Makefile                      tree, build, serve, check, clean
+Makefile                      tree, build, serve, check, style-*, versions, fixture, clean
 netlify.toml                  Hugo pin, contexts, headers
 style.lock                    the retrofit-site commit and SHA-256 of each copied file
+versions.toml                 the release lines the site publishes
+versions/                     the versioned build (Go, its own module): build and pack
 scripts/check-nav             the rendered navigation against the manifest
 scripts/style-sync            copy the design system files from retrofit-site
 scripts/style-check           hold the copies to style.lock
@@ -82,15 +115,19 @@ assets/styles/custom.css      hugo-book's style hook: the restyle onto the token
 layouts/
   baseof.html                 hugo-book's, with the top bar, the manifest menu and a TOC-only right pane
   _partials/
-    topbar.html               name, search, version
+    topbar.html               name, search, version, the version switcher
     nav.html                  the left navigation from manifest.json
+    canonical.html            the canonical link: /current/ on a versioned build
+    page-rel.html             a page's path under its version
     manifest-check.html       build guard: every manifest page renders
+    docs/html-head.html       hugo-book's, with the canonical hook, paper theme-color, light only
     docs/prev-next.html       hugo-book's, in manifest order
     docs/html-head-favicon.html  hugo-book's, linking the mark only
     docs/inject/head.html     hugo-book hook: the guard, noindex on previews, the design system CSS
 ```
 
-`layouts/baseof.html`, `layouts/_partials/docs/prev-next.html` and
+`layouts/baseof.html`, `layouts/_partials/docs/html-head.html`,
+`layouts/_partials/docs/prev-next.html` and
 `layouts/_partials/docs/html-head-favicon.html` replace hugo-book's files of
 the same name. When the pin moves, diff them against the
 theme's copies.

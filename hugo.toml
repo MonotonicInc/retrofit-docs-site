@@ -33,6 +33,11 @@ enableRobotsTXT = false
   [[module.mounts]]
     source = "_tree/manifest.json"
     target = "data/manifest.json"
+  # Written by versions/ for a versioned build only: the lines, the newest,
+  # and which path this build is (the canonical link, the version switcher).
+  [[module.mounts]]
+    source = "_tree/versions.json"
+    target = "data/versions.json"
 
   [[module.mounts]]
     source = "layouts"

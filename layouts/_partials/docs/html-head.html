@@ -1,0 +1,65 @@
+{{- /*
+  hugo-book's html-head.html (pinned in go.mod) with three changes. Diff it
+  against the theme's copy when the pin moves.
+
+  1. The canonical link comes from _partials/canonical.html: on a versioned
+     build every page names its /current/ copy (kata 12y6).
+  2. theme-color is the design system's --paper, one value (tokens.css; a
+     meta tag cannot read a custom property).
+  3. color-scheme is light only: the design system has no dark mode.
+*/ -}}
+{{ partial "docs/html-head-generator" . }}
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="{{ or .Description .Summary | plainify | htmlUnescape }}">
+<meta name="theme-color" content="#f1f2ef">
+<meta name="color-scheme" content="light">
+<meta name="format-detection" content="telephone=no">
+
+{{- with .Page.Params.BookHref -}}
+  <meta http-equiv="Refresh" content="0; url='{{ . }}'" />
+{{- end -}}
+
+{{ partial "opengraph.html" . }}
+{{ partial "schema.html" . }}
+
+<title>{{ partial "docs/html-head-title" . }}</title>
+{{ partial "docs/html-head-favicon" . }}
+
+{{- $manifest := resources.Get "manifest.json" | resources.ExecuteAsTemplate "manifest.json" . }}
+<link rel="manifest" href="{{ $manifest.RelPermalink }}">
+{{ partial "canonical.html" . }}
+
+{{- range .Translations }}
+  <link rel="alternate" hreflang="{{ default .Site.Language.Locale .Language.Name }}" href="{{ .Permalink }}" title="{{ partial "docs/title" . }}">
+{{- end -}}
+
+<!-- Theme stylesheet, you can customize it by creating `assets/styles/custom.css` in your website -->
+{{ partial "docs/html-head-styles" . }}
+
+<!-- Search -->
+{{- if default true .Site.Params.BookSearch -}}
+  {{- $searchJS := resources.Get "search.js"
+    | resources.ExecuteAsTemplate (printf "%s.search.js" .Language.Name) .
+    | resources.Minify | resources.Fingerprint -}}
+  <script type="module" src="{{ partial "docs/links/resource-precache" $searchJS }}" {{ template "integrity" $searchJS }}></script>
+{{- end -}}
+
+<!-- Service Worker -->
+{{- if .Site.Params.BookServiceWorker -}}
+  {{- $swJS := resources.Get "sw-register.js" | resources.ExecuteAsTemplate "sw.js" . | resources.Minify | resources.Fingerprint }}
+  <script defer src="{{ $swJS.RelPermalink }}" {{ template "integrity" $swJS }}></script>
+{{ end -}}
+
+{{ partial "google_analytics.html" . }}
+
+{{- range .AlternativeOutputFormats -}}
+  {{ printf `<link rel="%s" type="%s" href="%s" title="%s" />` .Rel .MediaType.Type .Permalink $.Title | safeHTML }}
+{{ end -}}
+
+{{- define "integrity" -}}
+  {{- if (urls.Parse .Permalink).Host -}}
+    integrity="{{ .Data.Integrity }}" crossorigin="anonymous"
+  {{- end -}}
+{{- end -}}

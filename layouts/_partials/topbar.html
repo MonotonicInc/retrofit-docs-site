@@ -1,11 +1,36 @@
 {{- /*
   The top bar: the lowercase name linking retrofit.sh, search, and the
   release version the docs tree was generated for (manifest.json).
+
+  On a versioned build with more than one line, the version opens a list of
+  the lines (hugo.Data.versions, newest first). Each entry goes to this
+  page in that line, or to the line's first page when it has no such page.
+  The newest goes to /current/, which is canonical.
 */ -}}
+{{- $rel := partial "page-rel.html" . -}}
+{{- $version := hugo.Data.manifest.version -}}
 <header class="rf-topbar">
   <div class="rf-topbar-content">
     <a class="rf-topbar-name" href="{{ site.Params.homeURL }}">{{ site.Title }}</a>
     {{ partial "docs/search" . }}
-    {{ with hugo.Data.manifest.version }}<span class="rf-topbar-version">{{ . }}</span>{{ end }}
+    {{- $v := hugo.Data.versions -}}
+    {{- if and $v (gt (len $v.lines) 1) }}
+    <details class="rf-versions">
+      <summary class="rf-topbar-version" aria-label="Version {{ $version }}">{{ $version }}</summary>
+      <ul>
+      {{- range $v.lines }}
+        {{- $root := .url -}}
+        {{- if eq .line $v.current }}{{ $root = (urls.Parse $v.currentURL).Path }}{{ end -}}
+        {{- $target := printf "%s%s" $root (strings.TrimSuffix ".md" (index .pages 0)) -}}
+        {{- if eq $rel "" }}{{ $target = $root }}
+        {{- else if in .pages (printf "%s.md" (strings.TrimSuffix "/" $rel)) }}{{ $target = printf "%s%s" $root $rel }}
+        {{- else }}{{ $target = printf "%s/" $target }}{{ end }}
+        <li><a href="{{ $target }}"{{ if eq .version $version }} aria-current="true"{{ end }}>{{ .version }}</a></li>
+      {{- end }}
+      </ul>
+    </details>
+    {{- else }}
+    {{ with $version }}<span class="rf-topbar-version">{{ . }}</span>{{ end }}
+    {{- end }}
   </div>
 </header>

@@ -8,27 +8,34 @@
 #   - every navigation entry resolves to a page in the build;
 #   - on a manifest page, exactly one entry is active, and it is that page.
 #
-# Usage: scripts/check-nav [build-dir]   (default: public, after `make build`)
-# The manifest is read from _tree/manifest.json.
+# Usage: scripts/check-nav [build-dir] [url-prefix] [manifest]
+#   build-dir   default public, after `make build`
+#   url-prefix  the path the build is served under: / (default), or /0.10/
+#               for one line of a versioned build (`make versions`)
+#   manifest    default _tree/manifest.json; a versioned line's is
+#               _versions/<line>/manifest.json
 
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 BUILD="${1:-public}"
-MANIFEST="_tree/manifest.json"
+PREFIX="${2:-/}"
+MANIFEST="${3:-_tree/manifest.json}"
 
 [ -f "$MANIFEST" ] || { echo "check-nav: no $MANIFEST; run make tree" >&2; exit 1; }
 [ -f "$BUILD/index.html" ] || { echo "check-nav: no build in $BUILD; run make build" >&2; exit 1; }
 
-python3 -I - "$BUILD" "$MANIFEST" <<'PY'
+python3 -I - "$BUILD" "$MANIFEST" "$PREFIX" <<'PY'
 import json, os, sys
 from html.parser import HTMLParser
 
-build, manifest = sys.argv[1], sys.argv[2]
+build, manifest, prefix = sys.argv[1], sys.argv[2], sys.argv[3]
+if not prefix.endswith("/"):
+    prefix += "/"
 m = json.load(open(manifest))
 
 # Expected: (section title, [(url, title)]) in order.
-want = [(s["title"], [("/" + p["path"][:-3] + "/", p["title"]) for p in s["pages"]])
+want = [(s["title"], [(prefix + p["path"][:-3] + "/", p["title"]) for p in s["pages"]])
         for s in m["sections"]]
 
 class Nav(HTMLParser):
@@ -69,13 +76,17 @@ class Nav(HTMLParser):
         if self.link is not None:
             self.link[1] += data
 
+def local(url):
+    """The file a URL under the prefix is served from."""
+    return os.path.join(build, url[len(prefix):], "index.html")
+
 def resolves(href):
-    return href and href.startswith("/") and os.path.isfile(os.path.join(build, href.lstrip("/"), "index.html"))
+    return bool(href) and href.startswith(prefix) and os.path.isfile(local(href))
 
 failures = []
-pages = [("/", None)] + [(u, u) for _, ps in want for u, _ in ps]
+pages = [(prefix, None)] + [(u, u) for _, ps in want for u, _ in ps]
 for url, self_url in pages:
-    f = os.path.join(build, url.lstrip("/"), "index.html")
+    f = local(url)
     if not os.path.isfile(f):
         failures.append(f"{url}: no page in the build")
         continue

@@ -399,3 +399,64 @@ nav a[role=button]:hover {
     border-inline-end: 1px solid var(--rule);
   }
 }
+
+/* ───── version switcher ─────
+   The version opens a list of the lines (_partials/topbar.html). Square,
+   one rule, paper ground; the line being read is ink at 600. */
+.rf-versions {
+  position: relative;
+}
+
+.rf-versions summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 0.2rem 0.4rem;
+  border: 1px solid transparent;
+  transition: border-color 90ms linear;
+}
+
+.rf-versions summary::-webkit-details-marker {
+  display: none;
+}
+
+.rf-versions summary::after {
+  content: " \25BE";
+}
+
+.rf-versions summary:hover,
+.rf-versions[open] summary {
+  border-color: var(--rule-strong);
+  color: var(--ink);
+}
+
+.rf-versions ul {
+  position: absolute;
+  top: 100%;
+  inset-inline-end: 0;
+  min-width: 100%;
+  margin: 0;
+  padding: var(--rf-space-1) 0;
+  list-style: none;
+  background: var(--paper);
+  border: 1px solid var(--rule-strong);
+  border-top: 0;
+  z-index: 3;
+}
+
+.rf-versions li a {
+  display: block;
+  padding: 0.2rem 0.6rem;
+  font-family: var(--font-mono);
+  font-size: 0.84rem;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.rf-versions li a:hover,
+.rf-versions li a[aria-current] {
+  color: var(--ink);
+}
+
+.rf-versions li a[aria-current] {
+  font-weight: 600;
+}

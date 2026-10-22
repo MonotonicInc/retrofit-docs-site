@@ -1,0 +1,14 @@
+# The release lines docs.retrofit.sh publishes, one Hugo build each at /X.Y/
+# (versions/, run by `make versions`). The newest line is built again at
+# /current/, which every page names canonical, and / redirects there.
+#
+# Each line builds from the docs bundle (retrofit_docs.tar.gz) of its newest
+# full release on the repository below: tags bin-vX.Y.Z until the source
+# release, vX.Y.Z after; drafts and pre-releases skipped. The bundle is
+# checked against that release's checksums.txt and refused on a mismatch.
+#
+# Add a line when its first release ships; remove one when it stops being
+# supported.
+
+repo = "MonotonicHQ/retrofit"
+lines = ["0.10"]

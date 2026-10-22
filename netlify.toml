@@ -4,14 +4,17 @@
 # version; hugo-book (go.mod) needs 0.158 or later. Hugo fetches the theme
 # module with Go, which the Netlify image provides.
 #
-# The build renders a docs tree written by retrofit. `make build` writes it
-# from a retrofit checkout at RETROFIT (default ../retrofit), which a Netlify
-# build does not have; the versioned build that fetches each release's docs
-# bundle replaces it (kata 12y6).
+# `make versions` builds one site per release line in versions.toml at
+# /X.Y/ and the newest again at /current/, from the docs bundle each line's
+# newest full release on MonotonicHQ/retrofit carries, checked against that
+# release's checksums.txt. It needs no access to a private repository. Until
+# the first release carrying a bundle (v0.10.0) it has nothing to build and
+# fails. Set GITHUB_TOKEN in the site's environment to lift the API's
+# unauthenticated rate limit.
 
 [build]
   publish = "public"
-  command = "make build"
+  command = "make versions"
 
 # HUGO_ENV is set per context below, not here: values in [build.environment]
 # apply to every context, so setting it here would make hugo.IsProduction
@@ -35,13 +38,13 @@
 # (layouts/_partials/docs/inject/head.html), so a crawled preview is not a
 # second, self-canonical copy of the docs.
 [context.deploy-preview]
-  command = "make build HUGO_FLAGS='--baseURL $DEPLOY_PRIME_URL'"
+  command = "make versions BASE_URL=$DEPLOY_PRIME_URL"
 
 [context.deploy-preview.environment]
   HUGO_PARAMS_NOINDEX = "true"
 
 [context.branch-deploy]
-  command = "make build HUGO_FLAGS='--baseURL $DEPLOY_PRIME_URL'"
+  command = "make versions BASE_URL=$DEPLOY_PRIME_URL"
 
 [context.branch-deploy.environment]
   HUGO_PARAMS_NOINDEX = "true"
