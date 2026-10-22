@@ -1,0 +1,27 @@
+.claude
+.codex
+.agents/
+.cache/
+/skills-lock.json
+.idea/
+.vscode/
+.worktrees/
+_*/
+.DS_Store
+*.swp
+
+# Hugo build output
+public/
+resources/_gen/
+.hugo_build.lock
+
+# Local env
+/.envrc
+.env
+.env.local
+.netlify/
+
+# kata
+/.kata.toml
+.kata.local.toml
+.kata-flight/
