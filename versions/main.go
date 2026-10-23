@@ -76,9 +76,7 @@ func run(args []string, stdout io.Writer) error {
 		}
 		var src source = &githubSource{
 			repo:   cfg.Repo,
-			api:    "https://api.github.com",
 			dl:     "https://github.com",
-			token:  os.Getenv("GITHUB_TOKEN"),
 			client: httpClient(),
 		}
 		if *releasesDir != "" {

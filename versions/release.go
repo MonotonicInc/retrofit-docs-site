@@ -189,18 +189,20 @@ type source interface {
 	asset(tag, name string) ([]byte, error)
 }
 
-// githubSource reads the repository's releases from GitHub: the release
-// list from the API (full releases and WIP pre-releases; drafts and other
-// pre-releases skipped), the assets from
-// releases/download/<tag>/, which is public and needs no token. The list is
-// fetched once per build, however many lines there are, so the API calls
-// grow with the releases (a page per 100) rather than with lines times
-// releases.
+// githubSource reads the repository's releases from GitHub with no token
+// and no API call: the release tags from the repository's git refs
+// (<dl>/<repo>.git/info/refs, the public listing `git ls-remote --tags`
+// reads), the assets from releases/download/<tag>/. retrofit's publish
+// uploads into a draft, which holds no tag, and publishes it last
+// (.github/scripts/release-publish.sh), so a public tag stands for a
+// published release with its assets; one missing an asset fails the build
+// on the download. Nothing here needs GitHub's API or its rate limit. The
+// refs are read once per build, however many lines there are.
 type githubSource struct {
-	repo, api, dl, token string
-	client               *http.Client
+	repo, dl string
+	client   *http.Client
 
-	tags   []string // full releases, once listed
+	tags   []string // release tags, once listed
 	listed bool
 }
 
@@ -210,34 +212,67 @@ func (g *githubSource) list() ([]string, error) {
 	if g.listed {
 		return g.tags, nil
 	}
+	url := fmt.Sprintf("%s/%s.git/info/refs?service=git-upload-pack", g.dl, g.repo)
+	body, err := g.get(url)
+	if err != nil {
+		return nil, err
+	}
+	refs, err := parseRefs(body)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", url, err)
+	}
 	var tags []string
-	for page := 1; ; page++ {
-		url := fmt.Sprintf("%s/repos/%s/releases?per_page=100&page=%d", g.api, g.repo, page)
-		body, err := g.get(url, true)
-		if err != nil {
-			return nil, err
-		}
-		var rels []struct {
-			Tag        string `json:"tag_name"`
-			Draft      bool   `json:"draft"`
-			Prerelease bool   `json:"prerelease"`
-		}
-		if err := json.Unmarshal(body, &rels); err != nil {
-			return nil, fmt.Errorf("%s: %w", url, err)
-		}
-		for _, r := range rels {
-			// A full release is not marked a pre-release, and a WIP is;
-			// any other pre-release, or a draft, is skipped.
-			if v, ok := parseTag(r.Tag); ok && !r.Draft && r.Prerelease == (v.wip > 0) {
-				tags = append(tags, r.Tag)
+	for _, ref := range refs {
+		if tag, ok := strings.CutPrefix(ref, "refs/tags/"); ok {
+			if _, ok := parseTag(tag); ok {
+				tags = append(tags, tag)
 			}
-		}
-		if len(rels) < 100 {
-			break
 		}
 	}
 	g.tags, g.listed = tags, true
 	return tags, nil
+}
+
+// parseRefs reads the ref names from a smart HTTP ref advertisement: a
+// service line and a flush, then one pkt-line per ref ("<sha> <ref>", the
+// first followed by NUL and the capabilities), then a flush. A peeled tag
+// ("<ref>^{}") is skipped; it repeats its tag.
+func parseRefs(body []byte) ([]string, error) {
+	var refs []string
+	flushes := 0
+	for len(body) > 0 {
+		if len(body) < 4 {
+			return nil, errors.New("truncated pkt-line")
+		}
+		n, err := strconv.ParseUint(string(body[:4]), 16, 16)
+		if err != nil {
+			return nil, fmt.Errorf("bad pkt-line length %q", body[:4])
+		}
+		if n == 0 {
+			body = body[4:]
+			if flushes++; flushes == 2 {
+				return refs, nil
+			}
+			continue
+		}
+		if n < 4 || int(n) > len(body) {
+			return nil, errors.New("truncated pkt-line")
+		}
+		line := strings.TrimSuffix(string(body[4:n]), "\n")
+		body = body[n:]
+		if strings.HasPrefix(line, "# service=") {
+			continue
+		}
+		line, _, _ = strings.Cut(line, "\x00")
+		_, ref, ok := strings.Cut(line, " ")
+		if !ok {
+			return nil, fmt.Errorf("bad ref line %q", line)
+		}
+		if !strings.HasSuffix(ref, "^{}") {
+			refs = append(refs, ref)
+		}
+	}
+	return nil, errors.New("no closing flush")
 }
 
 func (g *githubSource) newest(line string) (string, semver, error) {
@@ -253,21 +288,11 @@ func (g *githubSource) newest(line string) (string, semver, error) {
 }
 
 func (g *githubSource) asset(tag, name string) ([]byte, error) {
-	return g.get(fmt.Sprintf("%s/%s/releases/download/%s/%s", g.dl, g.repo, tag, name), false)
+	return g.get(fmt.Sprintf("%s/%s/releases/download/%s/%s", g.dl, g.repo, tag, name))
 }
 
-func (g *githubSource) get(url string, api bool) ([]byte, error) {
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
-		return nil, err
-	}
-	if api {
-		req.Header.Set("Accept", "application/vnd.github+json")
-		if g.token != "" {
-			req.Header.Set("Authorization", "Bearer "+g.token)
-		}
-	}
-	resp, err := g.client.Do(req)
+func (g *githubSource) get(url string) ([]byte, error) {
+	resp, err := g.client.Get(url)
 	if err != nil {
 		return nil, err
 	}

@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -92,56 +93,79 @@ func TestLoadConfig(t *testing.T) {
 	}
 }
 
-func TestGithubSourceSkipsDraftsAndPrereleases(t *testing.T) {
-	t.Parallel()
-	page1 := make([]map[string]any, 100)
-	for i := range page1 {
-		page1[i] = map[string]any{"tag_name": fmt.Sprintf("bin-v0.9.%d", i)}
+// pkt is one pkt-line: its length in four hex digits, then the line.
+func pkt(line string) string { return fmt.Sprintf("%04x%s", len(line)+4, line) }
+
+// advertisement is a smart HTTP ref advertisement for refs, as
+// <repo>.git/info/refs?service=git-upload-pack serves it.
+func advertisement(refs ...string) string {
+	sha := strings.Repeat("f7c8", 10)
+	var b strings.Builder
+	b.WriteString(pkt("# service=git-upload-pack\n") + "0000")
+	b.WriteString(pkt(sha + " HEAD\x00multi_ack thin-pack symref=HEAD:refs/heads/main\n"))
+	for _, r := range refs {
+		b.WriteString(pkt(sha + " " + r + "\n"))
 	}
-	page2 := []map[string]any{
-		{"tag_name": "bin-v0.10.1"},
-		{"tag_name": "bin-v0.10.2", "prerelease": true},
-		{"tag_name": "bin-v0.10.3", "draft": true},
-		{"tag_name": "bin-v0.11.0-wip.1", "prerelease": true},
-		{"tag_name": "bin-v0.11.0-wip.2"},
-		{"tag_name": "bin-v0.11.0-wip.3", "prerelease": true, "draft": true},
+	b.WriteString("0000")
+	return b.String()
+}
+
+func TestParseRefs(t *testing.T) {
+	t.Parallel()
+	got, err := parseRefs([]byte(advertisement("refs/heads/main", "refs/tags/bin-v0.10.0", "refs/tags/bin-v0.10.0^{}")))
+	if err != nil || strings.Join(got, " ") != "HEAD refs/heads/main refs/tags/bin-v0.10.0" {
+		t.Errorf("parseRefs = %q, %v; want HEAD, main and the tag once", got, err)
+	}
+	for _, bad := range []string{"", "00", "zzzz", pkt("# service=git-upload-pack\n") + "0000" + "0010short", pkt("# service=git-upload-pack\n") + "0000" + pkt("noref\n") + "0000"} {
+		if _, err := parseRefs([]byte(bad)); err == nil {
+			t.Errorf("parseRefs(%q) accepted it", bad)
+		}
+	}
+}
+
+func TestGithubSourceReadsTags(t *testing.T) {
+	t.Parallel()
+	refs := []string{"refs/heads/main", "refs/tags/v0.1.0-beta", "refs/tags/bin-v0.10.1", "refs/tags/bin-v0.10.1^{}", "refs/tags/bin-v0.11.0-wip.1", "refs/heads/bin-v0.12.0"}
+	for i := 0; i < 100; i++ {
+		refs = append(refs, fmt.Sprintf("refs/tags/bin-v0.9.%d", i))
 	}
 	var calls atomic.Int32
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		calls.Add(1)
-		if r.URL.Path != "/repos/o/r/releases" {
-			http.NotFound(w, r)
-			return
-		}
-		switch r.URL.Query().Get("page") {
-		case "1":
-			_ = json.NewEncoder(w).Encode(page1)
-		case "2":
-			_ = json.NewEncoder(w).Encode(page2)
+		switch {
+		case r.URL.Path == "/o/r.git/info/refs" && r.URL.Query().Get("service") == "git-upload-pack" && r.Header.Get("Authorization") == "":
+			_, _ = io.WriteString(w, advertisement(refs...))
+		case r.URL.Path == "/o/r/releases/download/bin-v0.10.1/"+bundleName:
+			_, _ = io.WriteString(w, "bundle")
 		default:
-			_ = json.NewEncoder(w).Encode([]any{})
+			http.NotFound(w, r)
 		}
 	}))
 	defer srv.Close()
-	g := &githubSource{repo: "o/r", api: srv.URL, dl: srv.URL, client: srv.Client()}
+	g := &githubSource{repo: "o/r", dl: srv.URL, client: srv.Client()}
 	for line, want := range map[string]string{"0.10": "bin-v0.10.1", "0.9": "bin-v0.9.99"} {
 		if got, _, err := g.newest(line); err != nil || got != want {
 			t.Errorf("newest(%s) = %q, %v; want %q", line, got, err, want)
 		}
 	}
 	if _, _, err := g.newest("0.11"); err == nil {
-		t.Error("newest(0.11) found a release; want a refusal")
+		t.Error("newest(0.11) found a full release; want a refusal")
+	}
+	if _, _, err := g.newest("0.12"); err == nil {
+		t.Error("newest(0.12) took a branch for a tag")
 	}
 	if got, _, err := g.newest(anyLine); err != nil || got != "bin-v0.10.1" {
 		t.Errorf("newest(any line) = %q, %v; want bin-v0.10.1", got, err)
 	}
-	// The WIP the list kept: a pre-release, not a draft.
-	if got := strings.Join(g.tags[len(g.tags)-2:], " "); got != "bin-v0.10.1 bin-v0.11.0-wip.1" {
-		t.Errorf("the list ends %q; want bin-v0.10.1 bin-v0.11.0-wip.1", got)
+	if got := len(g.tags); got != 102 {
+		t.Errorf("%d tags listed; want 102 (the peeled tag, the branch and the beta skipped)", got)
 	}
-	// Four lookups, two pages of releases: the list is fetched once.
+	if body, err := g.asset("bin-v0.10.1", bundleName); err != nil || string(body) != "bundle" {
+		t.Errorf("asset = %q, %v; want the bundle", body, err)
+	}
+	// Five lookups and one download: the refs are read once.
 	if n := calls.Load(); n != 2 {
-		t.Errorf("%d API calls for four lookups over two pages; want 2", n)
+		t.Errorf("%d requests; want 2", n)
 	}
 }
 

@@ -55,7 +55,8 @@ publishes. `publish` in `versions.toml` chooses the layout.
 
 - `/current/` only, from the docs bundle (`retrofit_docs.tar.gz`) of the
   newest full release of any line on `MonotonicHQ/retrofit` (tags
-  `bin-vX.Y.Z`, later `vX.Y.Z`; drafts and pre-releases skipped). A new
+  `bin-vX.Y.Z`, later `vX.Y.Z`, read from the repository's public git tags
+  with no token and no API call; a draft has no tag). A new
   release publishes with no edit here. No `/X.Y/` path exists;
 - until the first full release, the newest WIP pre-release
   (`bin-vX.Y.Z-wip.N`) instead, its version in the top bar and every page
@@ -99,9 +100,6 @@ Set once, outside this repository:
 
 - **Netlify site** from `MonotonicInc/retrofit-docs-site`, production
   branch `main`; build settings come from `netlify.toml`.
-- **`GITHUB_TOKEN`** in the site's environment: a fine-grained token with
-  no permissions beyond public read, which lifts the GitHub API's
-  unauthenticated rate limit on Netlify's shared build hosts.
 - **Domain**: `docs.retrofit.sh` added to the site, with Netlify's TLS
   certificate and HTTPS forced. DNS is at Porkbun, where `*.retrofit.sh`
   already points at Netlify; a `CNAME` from `docs` to the site's

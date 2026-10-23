@@ -7,11 +7,11 @@
 # `make versions` builds what versions.toml publishes: before 1.0, /current/
 # only, from the docs bundle the newest full release on MonotonicHQ/retrofit
 # carries, checked against that release's checksums.txt. So a release's call
-# to the build hook publishes it with no edit to versions.toml. It needs no
-# access to a private repository. Until the first full release, /current/
-# is the newest WIP's, and a WIP's call publishes it. Until a WIP carries a
-# bundle (retrofit kata abgt) it has nothing to build and fails. Set GITHUB_TOKEN in the site's environment to lift the API's
-# unauthenticated rate limit.
+# to the build hook publishes it with no edit to versions.toml. Until the
+# first full release, /current/ is the newest WIP's, and a WIP's call
+# publishes it. The releases are found by the repository's public git tags
+# and fetched from releases/download/, so the build needs no token, no
+# GitHub API call and no access to a private repository.
 
 [build]
   publish = "public"
