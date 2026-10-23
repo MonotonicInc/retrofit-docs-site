@@ -192,7 +192,11 @@ func build(in buildInput) error {
 		return err
 	}
 	if in.publish == publishCurrent {
-		fmt.Fprintf(in.log, "versions: /current/ only, %s (%s), the newest full release\n", current.line, current.tag)
+		what := "the newest full release"
+		if current.v.wip > 0 {
+			what = "a WIP: there is no full release yet"
+		}
+		fmt.Fprintf(in.log, "versions: /current/ only, %s (%s), %s\n", current.line, current.tag, what)
 		return nil
 	}
 	lines := "lines"

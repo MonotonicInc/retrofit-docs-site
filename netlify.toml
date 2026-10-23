@@ -8,8 +8,9 @@
 # only, from the docs bundle the newest full release on MonotonicHQ/retrofit
 # carries, checked against that release's checksums.txt. So a release's call
 # to the build hook publishes it with no edit to versions.toml. It needs no
-# access to a private repository. Until the first release carrying a bundle
-# (v0.10.0) it has nothing to build and fails. Set GITHUB_TOKEN in the site's environment to lift the API's
+# access to a private repository. Until the first full release, /current/
+# is the newest WIP's, and a WIP's call publishes it. Until a WIP carries a
+# bundle (retrofit kata abgt) it has nothing to build and fails. Set GITHUB_TOKEN in the site's environment to lift the API's
 # unauthenticated rate limit.
 
 [build]

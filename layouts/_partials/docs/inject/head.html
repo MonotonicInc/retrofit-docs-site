@@ -1,6 +1,11 @@
 {{- partialCached "manifest-check.html" . "manifest-check" -}}
-{{- /* Preview and branch deploys set HUGO_PARAMS_NOINDEX (netlify.toml). */ -}}
-{{- if site.Params.noindex }}
+{{- /*
+  Kept out of search: preview and branch deploys, which set
+  HUGO_PARAMS_NOINDEX (netlify.toml), and a tree generated for a WIP
+  (manifest version X.Y.Z-wip.N), which /current/ is until the first full
+  release.
+*/ -}}
+{{- if or site.Params.noindex (strings.Contains (string hugo.Data.manifest.version) "-wip.") }}
 <meta name="robots" content="noindex,nofollow">
 {{- end }}
 {{- /*

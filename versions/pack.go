@@ -33,7 +33,7 @@ func pack(tree, tag, out string, log io.Writer) error {
 		tag = "bin-v" + m.Version
 	}
 	if _, ok := parseTag(tag); !ok {
-		return fmt.Errorf("-tag %q is not a full release tag (bin-vX.Y.Z or vX.Y.Z)", tag)
+		return fmt.Errorf("-tag %q is not a release tag (bin-vX.Y.Z or vX.Y.Z, -wip.N for a WIP)", tag)
 	}
 	bundle, err := tarTree(tree)
 	if err != nil {

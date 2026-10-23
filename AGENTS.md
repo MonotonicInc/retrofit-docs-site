@@ -25,10 +25,11 @@ make versions-test
 
 The published site is built from releases: `make versions` builds what
 `versions.toml` publishes from each release's docs bundle. Before 1.0 that
-is `/current/` only, the newest full release of any line; from 1.0,
-`publish = "lines"` adds `/X.Y/` per line (README, Versions). Do not list
-lines or add a `/X.Y/` path before 1.0. A bundle is checked against its
-release's `checksums.txt`; never weaken or skip that check. `versions/` is
+is `/current/` only, the newest full release of any line (the newest WIP
+until the first full release); from 1.0, `publish = "lines"` adds `/X.Y/`
+per line (README, Versions). Do not list lines or add a `/X.Y/` path before
+1.0. A bundle is checked against its release's `checksums.txt`; never
+weaken or skip that check. `versions/` is
 its own Go module so `go mod tidy` cannot touch the Hugo module's `go.mod`
 at the root.
 

@@ -223,6 +223,45 @@ func TestBuildCurrentOnly(t *testing.T) {
 	if !strings.Contains(page, "0.11.0") {
 		t.Error("/current/a/ does not name its version, 0.11.0")
 	}
+	if strings.Contains(page, "noindex") {
+		t.Error("a full release's /current/a/ has noindex")
+	}
+}
+
+// Until the first full release, /current/ is the newest WIP's, and names
+// that WIP's version.
+func TestBuildCurrentFromWIP(t *testing.T) {
+	root, hugo := siteRoot(t), hugoBin(t)
+	rels := t.TempDir()
+	for _, version := range []string{"0.10.0-wip.2", "0.10.0-wip.10"} {
+		tree := t.TempDir()
+		writeTree(t, tree, version, "0.10", []string{"a.md"})
+		if err := pack(tree, "", rels, &bytes.Buffer{}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	out := filepath.Join(t.TempDir(), "public")
+	var log bytes.Buffer
+	err := build(buildInput{
+		root: root, out: out, baseURL: "https://docs.example/", publish: publishCurrent,
+		src: dirSource{dir: rels}, hugo: hugo, log: &log,
+	})
+	if err != nil {
+		t.Fatalf("build: %v\n%s", err, log.String())
+	}
+	page := read(t, filepath.Join(out, "current", "a", "index.html"))
+	if !strings.Contains(page, "of 0.10.0-wip.10") {
+		t.Error("/current/ is not built from the newest WIP, bin-v0.10.0-wip.10")
+	}
+	if !strings.Contains(page, ">0.10.0-wip.10<") {
+		t.Error("the top bar does not name 0.10.0-wip.10")
+	}
+	if !regexp.MustCompile(`<meta name="?robots"? content="?noindex,nofollow"?>`).MatchString(page) {
+		t.Error("a WIP's /current/a/ has no noindex")
+	}
+	if !strings.Contains(log.String(), "bin-v0.10.0-wip.10), a WIP") {
+		t.Errorf("the log does not say /current/ is a WIP:\n%s", log.String())
+	}
 }
 
 func TestBuildRefusesBadPublish(t *testing.T) {

@@ -88,24 +88,47 @@ func loadConfig(file string) (config, error) {
 	return cfg, nil
 }
 
-// semver is a release's X.Y.Z.
-type semver [3]int
-
-func (v semver) line() string   { return fmt.Sprintf("%d.%d", v[0], v[1]) }
-func (v semver) String() string { return fmt.Sprintf("%d.%d.%d", v[0], v[1], v[2]) }
-
-func (v semver) less(w semver) bool {
-	for i := range v {
-		if v[i] != w[i] {
-			return v[i] < w[i]
-		}
-	}
-	return false
+// semver is a release's X.Y.Z, and for a WIP pre-release its N
+// (X.Y.Z-wip.N); a full release has no N.
+type semver struct {
+	xyz [3]int
+	wip int // 0 for a full release
 }
 
-// tagRE is a full release tag: bin-vX.Y.Z until the source release, vX.Y.Z
-// after. Anything with a suffix (a WIP, a pre-release) does not match.
-var tagRE = regexp.MustCompile(`^(?:bin-)?v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$`)
+func (v semver) line() string { return fmt.Sprintf("%d.%d", v.xyz[0], v.xyz[1]) }
+
+func (v semver) String() string {
+	s := fmt.Sprintf("%d.%d.%d", v.xyz[0], v.xyz[1], v.xyz[2])
+	if v.wip > 0 {
+		s += fmt.Sprintf("-wip.%d", v.wip)
+	}
+	return s
+}
+
+// less orders as semver does: X.Y.Z-wip.N comes before X.Y.Z.
+func (v semver) less(w semver) bool {
+	if v.xyz != w.xyz {
+		for i := range v.xyz {
+			if v.xyz[i] != w.xyz[i] {
+				return v.xyz[i] < w.xyz[i]
+			}
+		}
+	}
+	switch {
+	case v.wip == w.wip:
+		return false
+	case v.wip == 0:
+		return false
+	case w.wip == 0:
+		return true
+	}
+	return v.wip < w.wip
+}
+
+// tagRE is a release tag: bin-vX.Y.Z until the source release, vX.Y.Z
+// after, and a WIP pre-release's X.Y.Z-wip.N. Any other suffix does not
+// match.
+var tagRE = regexp.MustCompile(`^(?:bin-)?v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-wip\.([1-9][0-9]*))?$`)
 
 func parseTag(tag string) (semver, bool) {
 	m := tagRE.FindStringSubmatch(tag)
@@ -113,20 +136,17 @@ func parseTag(tag string) (semver, bool) {
 		return semver{}, false
 	}
 	var v semver
-	for i := range v {
-		v[i], _ = strconv.Atoi(m[i+1])
+	for i := range v.xyz {
+		v.xyz[i], _ = strconv.Atoi(m[i+1])
+	}
+	if m[4] != "" {
+		v.wip, _ = strconv.Atoi(m[4])
 	}
 	return v, true
 }
 
-func lineVersion(line string) semver {
-	m := lineRE.FindStringSubmatch(line)
-	x, _ := strconv.Atoi(m[1])
-	y, _ := strconv.Atoi(m[2])
-	return semver{x, y, 0}
-}
-
-// anyLine asks a source for the newest full release whatever its line.
+// anyLine asks a source for the newest full release whatever its line, or
+// the newest WIP while there is no full release.
 const anyLine = ""
 
 // lineName is how a refusal names what was asked for.
@@ -137,32 +157,41 @@ func lineName(line string) string {
 	return "line " + line
 }
 
-// newestTag picks the newest full release of line among tags, or of any
-// line when line is anyLine.
+// newestTag picks the newest full release of line among tags. For anyLine
+// it picks the newest full release of any line, and only when there is
+// none, the newest WIP: before the first full release the site publishes a
+// WIP's docs, and from then on WIPs are ignored with no edit anywhere.
 func newestTag(line string, tags []string) (string, semver, bool) {
-	var best string
-	var bestV semver
-	for _, t := range tags {
-		v, ok := parseTag(t)
-		if !ok || (line != anyLine && v.line() != line) {
-			continue
+	newest := func(wip bool) (string, semver, bool) {
+		var best string
+		var bestV semver
+		for _, t := range tags {
+			v, ok := parseTag(t)
+			if !ok || (v.wip > 0) != wip || (line != anyLine && v.line() != line) {
+				continue
+			}
+			if best == "" || bestV.less(v) {
+				best, bestV = t, v
+			}
 		}
-		if best == "" || bestV.less(v) {
-			best, bestV = t, v
-		}
+		return best, bestV, best != ""
 	}
-	return best, bestV, best != ""
+	if tag, v, ok := newest(false); ok || line != anyLine {
+		return tag, v, ok
+	}
+	return newest(true)
 }
 
-// A source finds a line's newest full release (or the newest of any line,
-// for anyLine) and reads its assets.
+// A source finds a line's newest full release (or, for anyLine, what
+// newestTag picks) and reads its assets.
 type source interface {
 	newest(line string) (tag string, v semver, err error)
 	asset(tag, name string) ([]byte, error)
 }
 
 // githubSource reads the repository's releases from GitHub: the release
-// list from the API (drafts and pre-releases skipped), the assets from
+// list from the API (full releases and WIP pre-releases; drafts and other
+// pre-releases skipped), the assets from
 // releases/download/<tag>/, which is public and needs no token. The list is
 // fetched once per build, however many lines there are, so the API calls
 // grow with the releases (a page per 100) rather than with lines times
@@ -197,7 +226,9 @@ func (g *githubSource) list() ([]string, error) {
 			return nil, fmt.Errorf("%s: %w", url, err)
 		}
 		for _, r := range rels {
-			if !r.Draft && !r.Prerelease {
+			// A full release is not marked a pre-release, and a WIP is;
+			// any other pre-release, or a draft, is skipped.
+			if v, ok := parseTag(r.Tag); ok && !r.Draft && r.Prerelease == (v.wip > 0) {
 				tags = append(tags, r.Tag)
 			}
 		}
@@ -216,7 +247,7 @@ func (g *githubSource) newest(line string) (string, semver, error) {
 	}
 	tag, v, ok := newestTag(line, tags)
 	if !ok {
-		return "", semver{}, fmt.Errorf("%s: no full release on %s", lineName(line), g.repo)
+		return "", semver{}, fmt.Errorf("%s: no release on %s", lineName(line), g.repo)
 	}
 	return tag, v, nil
 }
@@ -263,7 +294,7 @@ func (d dirSource) newest(line string) (string, semver, error) {
 	}
 	tag, v, ok := newestTag(line, tags)
 	if !ok {
-		return "", semver{}, fmt.Errorf("%s: no full release in %s", lineName(line), d.dir)
+		return "", semver{}, fmt.Errorf("%s: no release in %s", lineName(line), d.dir)
 	}
 	return tag, v, nil
 }

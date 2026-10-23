@@ -57,6 +57,10 @@ publishes. `publish` in `versions.toml` chooses the layout.
   newest full release of any line on `MonotonicHQ/retrofit` (tags
   `bin-vX.Y.Z`, later `vX.Y.Z`; drafts and pre-releases skipped). A new
   release publishes with no edit here. No `/X.Y/` path exists;
+- until the first full release, the newest WIP pre-release
+  (`bin-vX.Y.Z-wip.N`) instead, its version in the top bar and every page
+  `noindex`. Once a full release exists WIPs are ignored, with no edit
+  anywhere;
 - every page is its own canonical, and the top bar names the version with
   no switcher;
 - under every page, one sentence points at the release notes
@@ -78,8 +82,9 @@ version, and the root holds `_redirects` (`/` to `/current/`), `/fonts/`
 (fonts.css loads the faces from the root) and `404.html`.
 
 Every bundle is fetched and checked before anything is built, so a refusal
-leaves no partial site. Until the first release carries a bundle (v0.10.0),
-`make versions` refuses with "no full release"; use a fixture.
+leaves no partial site. Until a release or WIP carries a bundle (retrofit
+kata abgt), `make versions` refuses on the newest WIP's missing bundle; use
+a fixture.
 
 ## Chrome
 

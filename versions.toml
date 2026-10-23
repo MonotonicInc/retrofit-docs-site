@@ -1,13 +1,14 @@
 # What docs.retrofit.sh publishes (versions/, run by `make versions`), from
 # the docs bundles (retrofit_docs.tar.gz) the repository below attaches to
-# its full releases: tags bin-vX.Y.Z until the source release, vX.Y.Z after;
-# drafts and pre-releases skipped. Each bundle is checked against its
-# release's checksums.txt and refused on a mismatch. / redirects to
-# /current/.
+# its releases: tags bin-vX.Y.Z until the source release, vX.Y.Z after, and
+# bin-vX.Y.Z-wip.N for a WIP pre-release; drafts and other pre-releases
+# skipped. Each bundle is checked against its release's checksums.txt and
+# refused on a mismatch. / redirects to /current/.
 #
 # publish = "current" (before 1.0): /current/ only, built from the newest
-# full release of any line, so a new release publishes with no edit here. No
-# /X.Y/ path exists, and lines is refused.
+# full release of any line, so a new release publishes with no edit here.
+# Until the first full release it is the newest WIP's, and once one exists
+# WIPs are ignored. No /X.Y/ path exists, and lines is refused.
 #
 # publish = "lines" (from 1.0): each line in lines is built at /X.Y/ from
 # its newest full release, and the newest line again at /current/, which

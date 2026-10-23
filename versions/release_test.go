@@ -34,6 +34,32 @@ func TestNewestTag(t *testing.T) {
 	if got, _, ok := newestTag(anyLine, tags); !ok || got != "v0.11.0" {
 		t.Errorf("newestTag(any line) = %q, %v; want v0.11.0", got, ok)
 	}
+
+	// A WIP only while no full release exists, and then the newest by N.
+	wips := []string{"bin-v0.10.0-wip.2", "bin-v0.10.0-wip.10", "bin-v0.9.9-wip.30", "bin-v0.10.0-rc.1", "bin-v0.10.0-wip.0"}
+	if got, v, ok := newestTag(anyLine, wips); !ok || got != "bin-v0.10.0-wip.10" || v.String() != "0.10.0-wip.10" || v.line() != "0.10" {
+		t.Errorf("newestTag(any line) over WIPs = %q, %v, %v; want bin-v0.10.0-wip.10", got, v, ok)
+	}
+	if got, _, ok := newestTag("0.10", wips); ok {
+		t.Errorf("newestTag(0.10) over WIPs = %q; want none (a line takes full releases only)", got)
+	}
+	if got, _, ok := newestTag(anyLine, append(wips, "bin-v0.9.0", "bin-v0.11.0-wip.1")); !ok || got != "bin-v0.9.0" {
+		t.Errorf("newestTag(any line) with one full release = %q, %v; want bin-v0.9.0, the WIPs ignored", got, ok)
+	}
+}
+
+func TestSemverOrder(t *testing.T) {
+	t.Parallel()
+	order := []string{"v0.9.9", "v0.10.0-wip.1", "v0.10.0-wip.2", "v0.10.0-wip.10", "v0.10.0", "v0.10.1-wip.1", "v0.10.1", "v1.0.0"}
+	for i := range order {
+		for j := range order {
+			a, _ := parseTag(order[i])
+			b, _ := parseTag(order[j])
+			if got := a.less(b); got != (i < j) {
+				t.Errorf("%s less %s = %v; want %v", order[i], order[j], got, i < j)
+			}
+		}
+	}
 }
 
 func TestLoadConfig(t *testing.T) {
@@ -76,6 +102,9 @@ func TestGithubSourceSkipsDraftsAndPrereleases(t *testing.T) {
 		{"tag_name": "bin-v0.10.1"},
 		{"tag_name": "bin-v0.10.2", "prerelease": true},
 		{"tag_name": "bin-v0.10.3", "draft": true},
+		{"tag_name": "bin-v0.11.0-wip.1", "prerelease": true},
+		{"tag_name": "bin-v0.11.0-wip.2"},
+		{"tag_name": "bin-v0.11.0-wip.3", "prerelease": true, "draft": true},
 	}
 	var calls atomic.Int32
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -105,6 +134,10 @@ func TestGithubSourceSkipsDraftsAndPrereleases(t *testing.T) {
 	}
 	if got, _, err := g.newest(anyLine); err != nil || got != "bin-v0.10.1" {
 		t.Errorf("newest(any line) = %q, %v; want bin-v0.10.1", got, err)
+	}
+	// The WIP the list kept: a pre-release, not a draft.
+	if got := strings.Join(g.tags[len(g.tags)-2:], " "); got != "bin-v0.10.1 bin-v0.11.0-wip.1" {
+		t.Errorf("the list ends %q; want bin-v0.10.1 bin-v0.11.0-wip.1", got)
 	}
 	// Four lookups, two pages of releases: the list is fetched once.
 	if n := calls.Load(); n != 2 {
