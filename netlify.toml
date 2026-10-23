@@ -22,6 +22,9 @@
 # true on deploy previews and branch deploys too.
 [build.environment]
   HUGO_VERSION = "0.165.0"
+  # Go builds versions/ and fetches the hugo-book module; both go.mod files
+  # need 1.25 or later, and the image's default Go is not pinned.
+  GO_VERSION = "1.26.10"
   TZ = "UTC"
 
 [context.production.environment]
