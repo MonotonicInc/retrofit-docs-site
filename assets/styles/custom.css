@@ -178,9 +178,29 @@ nav a[role=button]:hover {
   display: none;
 }
 
+/* A result: the page title in ink, then the excerpt under it in quiet
+   metadata, hairlines between results, no bullets. */
+.rf-topbar #book-search-results li {
+  list-style: none;
+  padding: var(--rf-space-2) 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.rf-topbar #book-search-results li:last-child {
+  border-bottom: 0;
+}
+
 .book-search ul a {
+  display: block;
   color: var(--ink);
   font-weight: 600;
+}
+
+.rf-topbar #book-search-results small {
+  display: block;
+  font-size: 0.84rem;
+  line-height: 1.45;
+  color: var(--hush);
 }
 
 /* The fixed side panels start under the top bar, not at the top of the viewport. */
@@ -433,6 +453,48 @@ nav a[role=button]:hover {
   body:has(#menu-control:checked) .book-menu .book-menu-content {
     box-shadow: none;
     border-inline-end: 1px solid var(--rule);
+  }
+
+  /* Tighter between name, search and version, so search keeps its room. */
+  .rf-topbar-content {
+    gap: var(--rf-space-3);
+  }
+
+  /* Search results span the screen under the top bar, not the width of
+     the input, which is narrow here. The sticky top bar is their
+     containing block. */
+  .rf-topbar .book-search {
+    position: static;
+    min-width: 0;
+  }
+
+  .rf-topbar #book-search-results {
+    top: var(--rf-topbar-height);
+    border-inline: 0;
+    border-bottom: 1px solid var(--rule-strong);
+    padding-inline: var(--space-16);
+  }
+}
+
+/* hugo-book holds the page to 20rem; on a screen narrower than that the
+   whole page scrolled sideways. */
+body,
+.book-page {
+  min-width: 0;
+}
+
+/* Phones: the home page's contents stack, the title over its
+   description, with the rule under the pair. */
+@media screen and (max-width: 36rem) {
+  .rf-home table tr td {
+    display: block;
+    width: auto;
+  }
+
+  .rf-home table tr td:first-child {
+    width: auto;
+    border-bottom: 0;
+    padding-bottom: 0;
   }
 }
 
