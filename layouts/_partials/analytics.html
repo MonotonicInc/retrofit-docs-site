@@ -1,0 +1,24 @@
+{{- /*
+  Plausible, on the live docs.retrofit.sh only, gated as retrofit-site's
+  baseof.html gates it. All three are required:
+
+  1. params.plausibleScript is set (hugo.toml).
+  2. Netlify's CONTEXT is "production". Not hugo.IsProduction, which a bare
+     `hugo` build also sets; CONTEXT is unset locally, and a deploy preview
+     or branch deploy has its own.
+  3. The deploy host (Netlify's URL) is baseURL's host, so the production
+     context's <name>.netlify.app host stays out until the domain is the
+     one served, and matches the domain Plausible counts.
+
+  No forms and no downloads here: outbound links only.
+*/ -}}
+{{- $script := site.Params.plausibleScript -}}
+{{- $deployHost := "" -}}
+{{- with os.Getenv "URL" }}{{ $deployHost = (urls.Parse .).Host }}{{ end -}}
+{{- if and $script (eq (os.Getenv "CONTEXT") "production") (eq $deployHost (urls.Parse site.BaseURL).Host) }}
+<script async src="{{ $script }}"></script>
+<script>
+  window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
+  plausible.init({ outboundLinks: true, fileDownloads: false, formSubmissions: false })
+</script>
+{{- end }}

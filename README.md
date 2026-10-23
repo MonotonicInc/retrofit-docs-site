@@ -86,6 +86,33 @@ leaves no partial site. Until a release or WIP carries a bundle (retrofit
 kata abgt), `make versions` refuses on the newest WIP's missing bundle; use
 a fixture.
 
+## Deploy
+
+Netlify builds `main` with `make versions` (`netlify.toml`); a deploy
+preview or branch deploy builds against its own host with every page
+`noindex`. Nothing deploys by hand: retrofit's release workflow POSTs the
+site's build hook after each publish (its `docs-site` job), and the build
+fetches what `versions.toml` publishes. A rebuild from unchanged releases
+writes byte-identical files, so Netlify uploads nothing new.
+
+Set once, outside this repository:
+
+- **Netlify site** from `MonotonicInc/retrofit-docs-site`, production
+  branch `main`; build settings come from `netlify.toml`.
+- **`GITHUB_TOKEN`** in the site's environment: a fine-grained token with
+  no permissions beyond public read, which lifts the GitHub API's
+  unauthenticated rate limit on Netlify's shared build hosts.
+- **Domain**: `docs.retrofit.sh` added to the site, with Netlify's TLS
+  certificate and HTTPS forced. DNS is at Porkbun, where `*.retrofit.sh`
+  already points at Netlify; a `CNAME` from `docs` to the site's
+  `<name>.netlify.app` is the explicit record.
+- **Build hook**: Netlify's build hook for `main`, stored as the
+  `DOCS_SITE_BUILD_HOOK` secret in `MonotonicInc/retrofit`'s `release`
+  environment. Unset, a release's `docs-site` job warns and asks nothing.
+- **Plausible**: `docs.retrofit.sh` as a Plausible site, its script URL as
+  `plausibleScript` in `hugo.toml`. It loads only on the production deploy
+  served at `docs.retrofit.sh` (`layouts/_partials/analytics.html`).
+
 ## Chrome
 
 - **Top bar**: the lowercase name linking retrofit.sh, search, and the
@@ -144,7 +171,8 @@ layouts/
     docs/html-head.html       hugo-book's, with the canonical hook, paper theme-color, light only
     docs/prev-next.html       hugo-book's, in manifest order
     docs/html-head-favicon.html  hugo-book's, linking the mark only
-    docs/inject/head.html     hugo-book hook: the guard, noindex on previews, the design system CSS
+    analytics.html            Plausible, on the live site only
+    docs/inject/head.html     hugo-book hook: the guard, analytics, noindex on previews and WIPs, the design system CSS
     docs/inject/footer.html   hugo-book hook: the pre-1.0 note pointing at the release notes
 ```
 

@@ -82,3 +82,12 @@ enableRobotsTXT = false
   # last-change link, no service worker.
   BookComments = false
   BookServiceWorker = false
+
+  # Plausible's script for the docs.retrofit.sh site (Plausible, Site
+  # settings, Site installation). Empty keeps analytics off everywhere; set,
+  # it still loads only on the live site (layouts/_partials/analytics.html).
+  plausibleScript = ""
+
+# analytics.html reads Netlify's CONTEXT and URL, as retrofit-site does.
+[security.funcs]
+  getenv = ['^HUGO_', '^CI$', '^CONTEXT$', '^URL$']
