@@ -120,6 +120,9 @@ Set once, outside this repository:
 - **Left**: the manifest's sections in order, not hugo-book's file tree.
   Previous and next follow the same order.
 - **Right**: the page's table of contents.
+- **Home**: the tree has no index page, so the home page is the manifest as
+  contents: each section, each page with its title and description
+  (`layouts/home.html`).
 - **Off**: edit-this-page and last-change links, comments, the service
   worker. Light theme only; the design system has no dark mode.
 
@@ -160,6 +163,7 @@ static/fonts/, favicon.svg    fonts, their licenses, the mark (copies)
 assets/styles/custom.css      hugo-book's style hook: the restyle onto the tokens, top bar and pane layout
 layouts/
   baseof.html                 hugo-book's, with the top bar, the manifest menu and a TOC-only right pane
+  home.html                   the home page: the manifest's sections and pages, with descriptions
   _partials/
     topbar.html               name, search, version, the version switcher
     nav.html                  the left navigation from manifest.json

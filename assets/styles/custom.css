@@ -397,6 +397,19 @@ nav a[role=button]:hover {
   color: var(--ink-soft);
 }
 
+/* The home page's contents (layouts/home.html): one table per section, the
+   full measure, with the same column split in every section so the
+   descriptions line up down the page. */
+.rf-home table {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+}
+
+.rf-home table tr td:first-child {
+  width: 38%;
+}
+
 /* Blockquote: a hairline on the inside edge, no fill. */
 .markdown blockquote {
   padding: 0 var(--rf-space-4);

@@ -1,0 +1,32 @@
+{{- /*
+  The home page. The docs tree has no index page, so the home page is the
+  manifest as a contents page: each section in order, each page under it
+  with the title and description the manifest gives it, the same entries as
+  the left navigation (_partials/nav.html). Everything shown is retrofit's
+  (docs/nav.yaml); the site adds nothing but the layout. An entry with no
+  page in this build fails the build, as it does in the navigation.
+*/ -}}
+{{ define "main" }}
+<article class="markdown book-article rf-home">
+  <h1>{{ site.Title }}</h1>
+  {{- range hugo.Data.manifest.sections }}
+  <h2 id="{{ .title | anchorize }}">{{ .title }}</h2>
+  <table>
+    <tbody>
+    {{- range .pages }}
+      {{- $entry := . -}}
+      {{- $path := printf "/%s" (strings.TrimSuffix ".md" .path) -}}
+      {{- with site.GetPage $path }}
+      <tr>
+        <td><a href="{{ .RelPermalink }}">{{ $entry.title }}</a></td>
+        <td>{{ $entry.description | markdownify }}</td>
+      </tr>
+      {{- else }}
+        {{- errorf "home: manifest page %q has no page in this build" $entry.path -}}
+      {{- end }}
+    {{- end }}
+    </tbody>
+  </table>
+  {{- end }}
+</article>
+{{ end }}
