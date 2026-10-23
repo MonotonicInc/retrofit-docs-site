@@ -107,9 +107,12 @@ Set once, outside this repository:
 - **Build hook**: Netlify's build hook for `main`, stored as the
   `DOCS_SITE_BUILD_HOOK` secret in `MonotonicInc/retrofit`'s `release`
   environment. Unset, a release's `docs-site` job warns and asks nothing.
-- **Plausible**: `docs.retrofit.sh` as a Plausible site, its script URL as
-  `plausibleScript` in `hugo.toml`. It loads only on the production deploy
-  served at `docs.retrofit.sh` (`layouts/_partials/analytics.html`).
+- **Plausible**: retrofit.sh's Plausible site, shared: its script URL is
+  `plausibleScript` in `hugo.toml`, so a visit from retrofit.sh to the docs
+  is one session, and the hostname filter tells the two apart. A hostname
+  allow list on that site (Shields, Hostnames) must admit
+  `docs.retrofit.sh`. The script loads only on the production deploy served
+  at `docs.retrofit.sh` (`layouts/_partials/analytics.html`).
 
 ## Chrome
 

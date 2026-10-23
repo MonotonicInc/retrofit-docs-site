@@ -83,10 +83,11 @@ enableRobotsTXT = false
   BookComments = false
   BookServiceWorker = false
 
-  # Plausible's script for the docs.retrofit.sh site (Plausible, Site
-  # settings, Site installation). Empty keeps analytics off everywhere; set,
-  # it still loads only on the live site (layouts/_partials/analytics.html).
-  plausibleScript = ""
+  # Plausible's script: retrofit.sh's site, shared, so a visit from
+  # retrofit.sh to the docs is one session; filter by hostname to tell them
+  # apart. Empty keeps analytics off everywhere; set, it still loads only on
+  # the live site (layouts/_partials/analytics.html).
+  plausibleScript = "https://plausible.io/js/pa-ekHp-PeoKawcOiXpWU2KZ.js"
 
 # analytics.html reads Netlify's CONTEXT and URL, as retrofit-site does.
 [security.funcs]
